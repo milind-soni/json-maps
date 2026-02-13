@@ -14,6 +14,7 @@ const PopupSchema = z.object({
 const MarkerSchema = z.object({
   coordinates: z.tuple([z.number(), z.number()]),
   color: z.string().optional(),
+  icon: z.string().optional(),
   label: z.string().optional(),
   tooltip: z.string().optional(),
   popup: z.union([z.string(), PopupSchema]).optional(),

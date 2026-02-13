@@ -222,7 +222,17 @@ export default function MapPage() {
     // Add markers
     if (spec.markers) {
       for (const [, m] of Object.entries(spec.markers)) {
-        const marker = new maplibregl.Marker({ color: m.color || undefined })
+        let markerOpts: Record<string, unknown> = { color: m.color || undefined };
+        if (m.icon) {
+          const el = document.createElement("div");
+          el.style.cssText = \`width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;background:\${m.color || "#3b82f6"};border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);\`;
+          const img = document.createElement("img");
+          img.src = \`https://unpkg.com/lucide-static@latest/icons/\${m.icon}.svg\`;
+          img.style.cssText = "width:16px;height:16px;filter:brightness(0) invert(1);";
+          el.appendChild(img);
+          markerOpts = { element: el, anchor: "center" };
+        }
+        const marker = new maplibregl.Marker(markerOpts)
           .setLngLat(m.coordinates)
           .addTo(map);
         if (m.popup) {

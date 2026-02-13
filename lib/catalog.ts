@@ -19,6 +19,10 @@ interface FieldDef {
 const MARKER_FIELDS: Record<string, FieldDef> = {
   coordinates: { description: "[longitude, latitude] (required)" },
   color: { description: 'hex color string (e.g. "#e74c3c")' },
+  icon: {
+    description:
+      'lucide icon name in kebab-case (e.g. "coffee", "hotel", "utensils", "landmark", "train", "plane", "hospital", "school", "church", "shopping-cart", "fuel", "parking-meter", "tree-pine", "mountain", "waves", "music", "camera", "heart", "star", "flag", "map-pin", "building-2", "warehouse", "factory", "tent", "bike", "ship", "bus", "car")',
+  },
   label: { description: "text displayed below the marker" },
   tooltip: {
     description:
@@ -210,13 +214,14 @@ const BASE_RULES = [
   'Give markers descriptive ids like "eiffel-tower", "central-park", etc.',
   "When adding markers for landmarks, include a label, a tooltip for hover, and a rich popup object with title and description.",
   "Use varied colors for different markers to make them distinguishable.",
+  'When markers represent specific categories (restaurants, hotels, parks, etc.), use the icon field with a relevant lucide icon name (kebab-case). For generic location pins, omit icon to use the default dot.',
   'For layers, use "/layers/<id>" to add GeoJSON layers. Use well-known public GeoJSON URLs when possible.',
   "When adding layers with data-driven color, always include the domain range for continuous palettes.",
   "Include tooltip arrays for layers so users can inspect features on hover.",
   'When adding controls, use "/controls" path. Default shows zoom + compass at top-right. Only add controls when user requests interactive UI elements.',
   'For routes, use type "route" with a coordinates array of [lng, lat] pairs and optional style (color, width, opacity, dashed).',
   "When the user asks for clustering, set cluster: true on the geojson layer. Optionally include clusterOptions for radius, maxZoom, colors.",
-  'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color.',
+  'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
 ];
 
 const COORDINATE_EXAMPLES = [
@@ -240,9 +245,9 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/center","value":[139.69,35.68]}
 {"op":"replace","path":"/zoom","value":12}
 {"op":"replace","path":"/pitch","value":45}
-{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","label":"Tokyo Tower","tooltip":"Observation tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
+{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","icon":"tower-control","label":"Tokyo Tower","tooltip":"Observation tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
 {"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","label":"Shibuya Crossing","tooltip":"Iconic scramble crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World's busiest pedestrian crossing with up to 3,000 people per light change"}}}
-{"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","label":"Senso-ji","tooltip":"Buddhist temple · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}`,
+{"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","icon":"church","label":"Senso-ji","tooltip":"Buddhist temple · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}`,
   },
   {
     prompt: "Show recent earthquakes",

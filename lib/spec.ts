@@ -7,6 +7,7 @@ export interface PopupSpec {
 export interface MarkerSpec {
   coordinates: [number, number];
   color?: string;
+  icon?: string;
   label?: string;
   tooltip?: string;
   popup?: string | PopupSpec;

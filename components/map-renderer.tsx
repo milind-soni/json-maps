@@ -7,7 +7,6 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {
   type MapSpec,
   type MarkerSpec,
-  type LayerSpec,
   type GeoJsonLayerSpec,
   type RouteLayerSpec,
   type ControlsSpec,
@@ -19,6 +18,7 @@ import {
   resolveBasemapStyle,
 } from "@/lib/spec";
 import { PALETTES } from "@/lib/palettes";
+import { DynamicIcon } from "lucide-react/dynamic";
 
 const DEFAULT_CENTER: [number, number] = [0, 20];
 const DEFAULT_ZOOM = 1.5;
@@ -77,13 +77,23 @@ function sizeValueToExpression(size: SizeValue, fallback: number): any {
 /*  Portal content components                                          */
 /* ------------------------------------------------------------------ */
 
-function MarkerDot({ color, label }: { color: string; label?: string }) {
+function MarkerDot({ color, icon, label }: { color: string; icon?: string; label?: string }) {
   return (
     <>
-      <div
-        className="h-4 w-4 rounded-full border-2 border-white shadow-lg transition-transform duration-150 hover:scale-[1.3]"
-        style={{ background: color }}
-      />
+      {icon ? (
+        <div
+          className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-lg transition-transform duration-150 hover:scale-[1.15]"
+          style={{ background: color }}
+        >
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <DynamicIcon name={icon as any} size={16} color="#ffffff" strokeWidth={2.5} />
+        </div>
+      ) : (
+        <div
+          className="h-4 w-4 rounded-full border-2 border-white shadow-lg transition-transform duration-150 hover:scale-[1.3]"
+          style={{ background: color }}
+        />
+      )}
       {label && (
         <div
           className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-[10px] font-medium pointer-events-none"
@@ -348,9 +358,11 @@ function MapControls({
 function MapLegend({
   legendSpec,
   layerSpec,
+  dark,
 }: {
   legendSpec: LegendSpec;
   layerSpec: GeoJsonLayerSpec | null;
+  dark: boolean;
 }) {
   if (!layerSpec || !layerSpec.style) return null;
 
@@ -371,15 +383,20 @@ function MapLegend({
   const palette = PALETTES[colorDef.palette];
   if (!palette || palette.length === 0) return null;
 
+  const cardClass = dark
+    ? "rounded-md border border-white/10 bg-black/80 backdrop-blur-sm shadow-md px-3 py-2 text-xs"
+    : "rounded-md border border-gray-200 bg-white/95 backdrop-blur-sm shadow-md px-3 py-2 text-xs";
+  const titleClass = dark ? "font-semibold text-white mb-1.5" : "font-semibold text-gray-800 mb-1.5";
+
   return (
     <div className={`absolute ${posClass} z-10`}>
-      <div className="rounded-md border border-gray-200 bg-white/95 backdrop-blur-sm shadow-md px-3 py-2 text-xs">
-        <div className="font-semibold text-gray-800 mb-1.5">{title}</div>
+      <div className={cardClass}>
+        <div className={titleClass}>{title}</div>
         {colorDef.type === "continuous" && (
-          <ContinuousLegend colorDef={colorDef} palette={palette} />
+          <ContinuousLegend colorDef={colorDef} palette={palette} dark={dark} />
         )}
         {colorDef.type === "categorical" && (
-          <CategoricalLegend colorDef={colorDef} palette={palette} />
+          <CategoricalLegend colorDef={colorDef} palette={palette} dark={dark} />
         )}
       </div>
     </div>
@@ -389,9 +406,11 @@ function MapLegend({
 function ContinuousLegend({
   colorDef,
   palette,
+  dark,
 }: {
   colorDef: ContinuousColor;
   palette: string[];
+  dark: boolean;
 }) {
   const [min, max] = colorDef.domain ?? [0, 1];
   const gradient = `linear-gradient(to right, ${palette.join(", ")})`;
@@ -402,7 +421,7 @@ function ContinuousLegend({
         className="h-2.5 w-36 rounded-sm"
         style={{ background: gradient }}
       />
-      <div className="flex justify-between mt-0.5 text-[10px] text-gray-500">
+      <div className={`flex justify-between mt-0.5 text-[10px] ${dark ? "text-gray-400" : "text-gray-500"}`}>
         <span>{min}</span>
         <span>{max}</span>
       </div>
@@ -413,9 +432,11 @@ function ContinuousLegend({
 function CategoricalLegend({
   colorDef,
   palette,
+  dark,
 }: {
   colorDef: CategoricalColor;
   palette: string[];
+  dark: boolean;
 }) {
   const categories = colorDef.categories ?? [];
   if (categories.length === 0) return null;
@@ -428,7 +449,7 @@ function CategoricalLegend({
             className="w-2.5 h-2.5 rounded-sm shrink-0"
             style={{ background: palette[i % palette.length] }}
           />
-          <span className="text-gray-600 truncate">{cat}</span>
+          <span className={`truncate ${dark ? "text-gray-300" : "text-gray-600"}`}>{cat}</span>
         </div>
       ))}
     </div>
@@ -472,10 +493,14 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
   function addMarker(map: maplibregl.Map, id: string, ms: MarkerSpec) {
     const color = ms.color || "#3b82f6";
+    const hasIcon = !!ms.icon;
 
     const el = document.createElement("div");
-    el.style.cssText = "width:16px;height:16px;cursor:pointer;";
+    el.style.cssText = hasIcon
+      ? "width:28px;height:28px;cursor:pointer;"
+      : "width:16px;height:16px;cursor:pointer;";
     el.dataset.color = color;
+    if (ms.icon) el.dataset.icon = ms.icon;
 
     const marker = new maplibregl.Marker({
       element: el,
@@ -793,7 +818,8 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
       if (existing) {
         existing.setLngLat(ms.coordinates);
-        if (existing.getElement().dataset.color !== (ms.color ?? "")) {
+        const el = existing.getElement();
+        if (el.dataset.color !== (ms.color ?? "") || el.dataset.icon !== (ms.icon ?? "")) {
           removeMarker(id);
           addMarker(map, id, ms);
         }
@@ -955,13 +981,39 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       return;
     }
 
+    if (spec.center) {
+      mapRef.current.flyTo({
+        center: spec.center,
+        zoom: spec.zoom ?? DEFAULT_ZOOM,
+        pitch: spec.pitch ?? 0,
+        bearing: spec.bearing ?? 0,
+      });
+      return;
+    }
+
+    // Auto-fit to markers when no explicit viewport is set
+    const markers = spec.markers ? Object.values(spec.markers) : [];
+    if (markers.length > 0) {
+      const lngs = markers.map((m) => m.coordinates[0]);
+      const lats = markers.map((m) => m.coordinates[1]);
+      const bounds: [number, number, number, number] = [
+        Math.min(...lngs), Math.min(...lats),
+        Math.max(...lngs), Math.max(...lats),
+      ];
+      mapRef.current.fitBounds(bounds, {
+        padding: 80,
+        maxZoom: 14,
+      });
+      return;
+    }
+
     mapRef.current.flyTo({
-      center: spec.center ?? DEFAULT_CENTER,
-      zoom: spec.zoom ?? DEFAULT_ZOOM,
+      center: DEFAULT_CENTER,
+      zoom: DEFAULT_ZOOM,
       pitch: spec.pitch ?? 0,
       bearing: spec.bearing ?? 0,
     });
-  }, [spec.center, spec.zoom, spec.pitch, spec.bearing, spec.bounds]);
+  }, [spec.center, spec.zoom, spec.pitch, spec.bearing, spec.bounds, spec.markers]);
 
   // Sync markers
   useEffect(() => {
@@ -992,7 +1044,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
             const layer = spec.layers?.[leg.layer];
             const geoLayer = layer && layer.type === "geojson" ? layer : null;
             return (
-              <MapLegend key={id} legendSpec={leg} layerSpec={geoLayer} />
+              <MapLegend key={id} legendSpec={leg} layerSpec={geoLayer} dark={spec.basemap === "dark"} />
             );
           })}
       </div>
@@ -1003,7 +1055,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
         return (
           <Fragment key={id}>
             {createPortal(
-              <MarkerDot color={ms.color || "#3b82f6"} label={ms.label} />,
+              <MarkerDot color={ms.color || "#3b82f6"} icon={ms.icon} label={ms.label} />,
               p.markerEl,
             )}
             {p.popupContainer &&
