@@ -7,8 +7,9 @@ import { MapRenderer } from "./map-renderer";
 import { ExportModal } from "./export-modal";
 import { type MapSpec } from "@/lib/spec";
 import { generateStaticCode } from "@/lib/generate-code";
+import { useMapStream } from "@/lib/use-map-stream";
 
-const SIMULATION_PROMPT = "Switch to a dark basemap";
+const SIMULATION_PROMPT = "Show me Tokyo at night with a tilted view";
 
 interface SimulationStage {
   spec: MapSpec;
@@ -20,20 +21,47 @@ const SIMULATION_STAGES: SimulationStage[] = [
     spec: { basemap: "dark" },
     stream: '{"op":"replace","path":"/basemap","value":"dark"}',
   },
+  {
+    spec: { basemap: "dark", center: [139.69, 35.68] },
+    stream: '{"op":"replace","path":"/center","value":[139.69,35.68]}',
+  },
+  {
+    spec: { basemap: "dark", center: [139.69, 35.68], zoom: 12 },
+    stream: '{"op":"replace","path":"/zoom","value":12}',
+  },
+  {
+    spec: { basemap: "dark", center: [139.69, 35.68], zoom: 12, pitch: 45 },
+    stream: '{"op":"replace","path":"/pitch","value":45}',
+  },
+  {
+    spec: {
+      basemap: "dark",
+      center: [139.69, 35.68],
+      zoom: 12,
+      pitch: 45,
+      bearing: -17,
+    },
+    stream: '{"op":"replace","path":"/bearing","value":-17}',
+  },
 ];
 
 const EXAMPLE_PROMPTS = [
-  "Use streets basemap",
-  "Switch to light theme",
+  "Show San Francisco streets",
+  "Fly to Paris with a tilted view",
+  "Dark map of New York zoomed in",
+  "Show Mumbai from above",
 ];
 
+type Mode = "simulation" | "interactive";
 type Phase = "typing" | "streaming" | "complete";
 type LeftTab = "spec" | "stream";
 type RightTab = "live render" | "static code";
 
 export function Demo() {
+  const [mode, setMode] = useState<Mode>("simulation");
   const [phase, setPhase] = useState<Phase>("typing");
   const [typedPrompt, setTypedPrompt] = useState("");
+  const [userPrompt, setUserPrompt] = useState("");
   const [streamLines, setStreamLines] = useState<string[]>([]);
   const [leftTab, setLeftTab] = useState<LeftTab>("spec");
   const [rightTab, setRightTab] = useState<RightTab>("live render");
@@ -42,9 +70,23 @@ export function Demo() {
   const [showExport, setShowExport] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Typing effect
+  const {
+    spec: apiSpec,
+    isStreaming: apiStreaming,
+    send,
+    clear,
+    rawLines: apiRawLines,
+    error: apiError,
+  } = useMapStream({
+    api: "/api/generate",
+    onError: (err: Error) => {
+      console.error("Generation error:", err);
+    },
+  });
+
+  // Typing effect for simulation
   useEffect(() => {
-    if (phase !== "typing") return;
+    if (mode !== "simulation" || phase !== "typing") return;
 
     let i = 0;
     const interval = setInterval(() => {
@@ -58,11 +100,11 @@ export function Demo() {
     }, 20);
 
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [mode, phase]);
 
   // Streaming simulation
   useEffect(() => {
-    if (phase !== "streaming") return;
+    if (mode !== "simulation" || phase !== "streaming") return;
 
     let i = 0;
     const interval = setInterval(() => {
@@ -75,12 +117,29 @@ export function Demo() {
         i++;
       } else {
         clearInterval(interval);
-        setTimeout(() => setPhase("complete"), 500);
+        setTimeout(() => {
+          setPhase("complete");
+          setMode("interactive");
+          setUserPrompt("");
+        }, 500);
       }
     }, 600);
 
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [mode, phase]);
+
+  // Track API stream lines and spec
+  useEffect(() => {
+    if (mode === "interactive" && apiRawLines.length > 0) {
+      setStreamLines(apiRawLines);
+    }
+  }, [mode, apiRawLines]);
+
+  useEffect(() => {
+    if (mode === "interactive" && apiSpec && Object.keys(apiSpec).length > 0) {
+      setCurrentSpec(apiSpec);
+    }
+  }, [mode, apiSpec]);
 
   // Fullscreen body scroll lock
   useEffect(() => {
@@ -92,16 +151,43 @@ export function Demo() {
     }
   }, [isFullscreen]);
 
-  const handleReplay = useCallback(() => {
-    setPhase("typing");
-    setTypedPrompt("");
-    setStreamLines([]);
-    setCurrentSpec({ basemap: "light" });
-  }, []);
+  const stopGeneration = useCallback(() => {
+    if (mode === "simulation") {
+      setMode("interactive");
+      setPhase("complete");
+      setTypedPrompt(SIMULATION_PROMPT);
+      setUserPrompt("");
+    }
+    clear();
+  }, [mode, clear]);
 
-  const isTyping = phase === "typing";
-  const isStreaming = phase === "streaming";
-  const showLoadingDots = isStreaming;
+  const handleSubmit = useCallback(async () => {
+    if (!userPrompt.trim() || apiStreaming) return;
+    setStreamLines([]);
+    await send(userPrompt, { previousSpec: currentSpec });
+  }, [userPrompt, apiStreaming, send, currentSpec]);
+
+  const handleExampleClick = useCallback(
+    (prompt: string) => {
+      if (mode === "simulation") {
+        setMode("interactive");
+        setPhase("complete");
+      }
+      setUserPrompt(prompt);
+      setTimeout(() => {
+        const el = inputRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(prompt.length, prompt.length);
+        }
+      }, 0);
+    },
+    [mode],
+  );
+
+  const isTypingSimulation = mode === "simulation" && phase === "typing";
+  const isStreamingSimulation = mode === "simulation" && phase === "streaming";
+  const showLoadingDots = isStreamingSimulation || apiStreaming;
 
   const jsonCode = JSON.stringify(currentSpec, null, 2);
   const staticCode = generateStaticCode(currentSpec);
@@ -114,44 +200,54 @@ export function Demo() {
           <div
             className="border border-border rounded p-3 bg-background font-mono text-sm min-h-[44px] flex items-center justify-between cursor-text"
             onClick={() => {
-              if (phase === "complete") {
+              if (mode === "simulation") {
+                setMode("interactive");
+                setPhase("complete");
+                setUserPrompt("");
+                setTimeout(() => inputRef.current?.focus(), 0);
+              } else {
                 inputRef.current?.focus();
               }
             }}
           >
-            <div className="flex items-center flex-1">
-              <span className="inline-flex items-center h-5">
-                {typedPrompt}
-              </span>
-              {isTyping && (
-                <span className="inline-block w-2 h-4 bg-foreground ml-0.5 animate-pulse" />
-              )}
-            </div>
-            {phase === "complete" ? (
+            {mode === "simulation" ? (
+              <div className="flex items-center flex-1">
+                <span className="inline-flex items-center h-5">
+                  {typedPrompt}
+                </span>
+                {isTypingSimulation && (
+                  <span className="inline-block w-2 h-4 bg-foreground ml-0.5 animate-pulse" />
+                )}
+              </div>
+            ) : (
+              <form
+                className="flex items-center flex-1"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmit();
+                }}
+              >
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  placeholder="Describe your map..."
+                  className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground/50 text-sm"
+                  disabled={apiStreaming}
+                  maxLength={500}
+                />
+              </form>
+            )}
+            {mode === "simulation" || apiStreaming ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleReplay();
+                  stopGeneration();
                 }}
                 className="ml-2 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-                aria-label="Replay"
+                aria-label="Stop"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
-                  <path d="M21 3v5h-5" />
-                </svg>
-              </button>
-            ) : (
-              <div className="ml-2 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                 <svg
                   width="16"
                   height="16"
@@ -161,13 +257,43 @@ export function Demo() {
                 >
                   <rect x="6" y="6" width="12" height="12" />
                 </svg>
-              </div>
+              </button>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubmit();
+                }}
+                disabled={!userPrompt.trim()}
+                className="ml-2 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-30"
+                aria-label="Submit"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 12h14" />
+                  <path d="M12 5l7 7-7 7" />
+                </svg>
+              </button>
             )}
           </div>
+          {apiError && (
+            <div className="mt-2 text-xs text-red-500 text-center">
+              {apiError.message}
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
-            {EXAMPLE_PROMPTS.map((prompt) => (
+            {EXAMPLE_PROMPTS.slice(0, 2).map((prompt) => (
               <button
                 key={prompt}
+                onClick={() => handleExampleClick(prompt)}
                 className="text-xs px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-colors"
               >
                 {prompt}
