@@ -161,7 +161,7 @@ The spec is a single JSON object. Every field is optional — an empty `{}` give
 - Fullscreen toggle
 - Scale bar
 - Positioned via `controls.position`: `"top-left"` | `"top-right"` | `"bottom-left"` | `"bottom-right"`
-- React components with absolute positioning (mapcn pattern)
+- React components with absolute positioning
 
 #### 3.2 Legend Widget
 - Auto-generated from layer styles
@@ -261,7 +261,7 @@ MapSpec (JSON)
     → Widgets (legend, layers, basemap, geocoder)
 ```
 
-### Widget Positioning (from mapcn)
+### Widget Positioning
 
 ```
 ┌─────────────────────────────┐
@@ -274,6 +274,10 @@ MapSpec (JSON)
 ```
 
 Each position slot uses absolute CSS positioning with z-index layering. Multiple widgets in the same position stack vertically with gap.
+
+### Component Reuse
+
+Where possible, internal React components should be built as standalone, composable pieces (markers, controls, popups, tooltips, clustering). The spec layer translates JSON into these components — so the rendering internals are clean React code that could be used independently. This keeps the architecture flexible: the JSON spec is one interface, but the components underneath are reusable.
 
 ---
 
