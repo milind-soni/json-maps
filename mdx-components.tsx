@@ -105,6 +105,24 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       </blockquote>
     ),
     hr: () => <hr className="my-8 border-border" />,
+    table: ({ children }) => (
+      <div className="overflow-x-auto mb-4">
+        <table className="w-full text-sm border-collapse">{children}</table>
+      </div>
+    ),
+    thead: ({ children }) => (
+      <thead className="border-b border-border">{children}</thead>
+    ),
+    th: ({ children }) => (
+      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+        {children}
+      </th>
+    ),
+    td: ({ children }) => (
+      <td className="px-3 py-2 text-sm text-muted-foreground border-b border-border/50">
+        {children}
+      </td>
+    ),
     ...components,
   };
 }

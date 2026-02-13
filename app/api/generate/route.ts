@@ -29,7 +29,7 @@ The MapSpec has these fields:
     - pointColor: hex string OR data-driven color object (for points)
     - lineColor: hex string OR data-driven color object (for lines/outlines)
     - lineWidth: number (default 1)
-    - pointRadius: number (default 5)
+    - pointRadius: number OR data-driven size object (default 5)
     - opacity: number 0-1 (default 0.8)
   - tooltip: array of property names to show on hover, e.g. ["name", "population"]
 
@@ -37,6 +37,8 @@ Data-driven color (continuous):
   { "type": "continuous", "attr": "population", "palette": "Sunset", "domain": [0, 1000000] }
 Data-driven color (categorical):
   { "type": "categorical", "attr": "type", "palette": "Bold", "categories": ["residential", "commercial"] }
+Data-driven size (continuous):
+  { "type": "continuous", "attr": "mag", "domain": [0, 8], "range": [2, 12] }
 
 Available palettes:
 - Sequential: Burg, RedOr, OrYel, Peach, Mint, BluGrn, Emrld, BluYl, Teal, Purp, Sunset, SunsetDark, Magenta

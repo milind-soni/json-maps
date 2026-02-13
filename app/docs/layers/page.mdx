@@ -43,10 +43,22 @@ Layers render GeoJSON data on the map — points, lines, and polygons with stati
 | `pointColor` | `ColorValue` | (uses fillColor) | Point circle color |
 | `lineColor` | `ColorValue` | `"#333333"` | Line / polygon outline color |
 | `lineWidth` | `number` | `1` | Line width in pixels |
-| `pointRadius` | `number` | `5` | Point circle radius in pixels |
+| `pointRadius` | `SizeValue` | `5` | Point circle radius in pixels |
 | `opacity` | `number` | `0.8` | Overall opacity (0–1) |
 
 A `ColorValue` can be a static hex string or a data-driven mapping. See [Color System](/docs/colors) for details.
+
+A `SizeValue` can be a static number or a data-driven continuous mapping:
+```json
+{
+  "pointRadius": {
+    "type": "continuous",
+    "attr": "mag",
+    "domain": [0, 8],
+    "range": [2, 12]
+  }
+}
+```
 
 ## Geometry Handling
 

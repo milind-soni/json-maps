@@ -33,6 +33,17 @@ export interface CategoricalColor {
 
 export type ColorValue = string | ContinuousColor | CategoricalColor;
 
+/* ---- Data-driven size ---- */
+
+export interface ContinuousSize {
+  type: "continuous";
+  attr: string;
+  domain: [number, number];
+  range: [number, number];
+}
+
+export type SizeValue = number | ContinuousSize;
+
 /* ---- Layer system ---- */
 
 export interface LayerStyle {
@@ -40,7 +51,7 @@ export interface LayerStyle {
   pointColor?: ColorValue;
   lineColor?: ColorValue;
   lineWidth?: number;
-  pointRadius?: number;
+  pointRadius?: SizeValue;
   opacity?: number;
 }
 

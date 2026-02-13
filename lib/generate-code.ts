@@ -190,8 +190,11 @@ export default function MapPage() {
             filter: ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]],
             paint: {
               "circle-color": s.pointColor || s.fillColor || "#3b82f6",
-              "circle-radius": s.pointRadius ?? 5, "circle-opacity": s.opacity ?? 0.8,
-              "circle-stroke-width": 1, "circle-stroke-color": "#ffffff",
+              "circle-radius": s.pointRadius && s.pointRadius.type === "continuous"
+                ? ["interpolate", ["linear"], ["get", s.pointRadius.attr], s.pointRadius.domain[0], s.pointRadius.range[0], s.pointRadius.domain[1], s.pointRadius.range[1]]
+                : (s.pointRadius ?? 5),
+              "circle-opacity": s.opacity ?? 0.8,
+              "circle-stroke-width": s.lineWidth ?? 1, "circle-stroke-color": s.lineColor || "#333333",
             },
           });
 

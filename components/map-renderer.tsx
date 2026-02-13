@@ -9,6 +9,7 @@ import {
   type MarkerSpec,
   type LayerSpec,
   type ColorValue,
+  type SizeValue,
   resolveBasemapStyle,
 } from "@/lib/spec";
 import { PALETTES } from "@/lib/palettes";
@@ -53,6 +54,17 @@ function colorValueToExpression(color: ColorValue): any {
   }
 
   return "#888888";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function sizeValueToExpression(size: SizeValue, fallback: number): any {
+  if (typeof size === "number") return size;
+  if (size.type === "continuous") {
+    const [dMin, dMax] = size.domain;
+    const [rMin, rMax] = size.range;
+    return ["interpolate", ["linear"], ["get", size.attr], dMin, rMin, dMax, rMax];
+  }
+  return fallback;
 }
 
 /* ------------------------------------------------------------------ */
@@ -303,10 +315,10 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       ],
       paint: {
         "circle-color": pointColor,
-        "circle-radius": style.pointRadius ?? 5,
+        "circle-radius": sizeValueToExpression(style.pointRadius ?? 5, 5),
         "circle-opacity": opacity,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": style.lineWidth ?? 1,
+        "circle-stroke-color": lineColor,
       },
     });
 
@@ -480,10 +492,16 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Track basemap to skip redundant setStyle on mount
+  const prevBasemapRef = useRef(spec.basemap);
+
   // Update basemap — only when basemap actually changes (uses refs for sync callbacks)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    // Skip on mount — init effect already set the style
+    if (prevBasemapRef.current === spec.basemap) return;
+    prevBasemapRef.current = spec.basemap;
     const style = resolveBasemapStyle(spec.basemap);
     if (style) {
       map.setStyle(style);
