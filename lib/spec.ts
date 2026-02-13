@@ -64,6 +64,22 @@ export interface GeoJsonLayerSpec {
 
 export type LayerSpec = GeoJsonLayerSpec;
 
+/* ---- Controls ---- */
+
+export type ControlPosition =
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
+export interface ControlsSpec {
+  zoom?: boolean;
+  compass?: boolean;
+  fullscreen?: boolean;
+  locate?: boolean;
+  position?: ControlPosition;
+}
+
 /* ---- Map spec ---- */
 
 export interface MapSpec {
@@ -75,6 +91,7 @@ export interface MapSpec {
   bounds?: [number, number, number, number];
   markers?: Record<string, MarkerSpec>;
   layers?: Record<string, LayerSpec>;
+  controls?: ControlsSpec;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {

@@ -9,6 +9,7 @@ const PATCH_INSTRUCTIONS = `IMPORTANT: The current map is already loaded. Output
 - To remove a marker: {"op":"remove","path":"/markers/old-id"}
 - To add a layer: {"op":"add","path":"/layers/new-id","value":{...}}
 - To remove a layer: {"op":"remove","path":"/layers/old-id"}
+- To set controls: {"op":"replace","path":"/controls","value":{"zoom":true,"compass":true,"fullscreen":true,"position":"top-right"}}
 
 DO NOT output patches for fields that don't need to change. Only output what's necessary for the requested modification.`;
 

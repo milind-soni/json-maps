@@ -81,6 +81,16 @@ const GeoJsonLayerSchema = z.object({
 
 const LayerSchema = GeoJsonLayerSchema;
 
+/* ---- Controls ---- */
+
+const ControlsSchema = z.object({
+  zoom: z.boolean().optional(),
+  compass: z.boolean().optional(),
+  fullscreen: z.boolean().optional(),
+  locate: z.boolean().optional(),
+  position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
+});
+
 /* ---- Map spec ---- */
 
 export const MapSpecSchema = z.object({
@@ -92,6 +102,7 @@ export const MapSpecSchema = z.object({
   bounds: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(),
   markers: z.record(z.string(), MarkerSchema).optional(),
   layers: z.record(z.string(), LayerSchema).optional(),
+  controls: ControlsSchema.optional(),
 });
 
 /* ---- Validation helpers ---- */

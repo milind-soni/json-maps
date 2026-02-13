@@ -286,6 +286,15 @@ export default function MapPage() {
       });
     }
 
+    // Add controls
+    if (spec.controls) {
+      const c = spec.controls;
+      const pos = c.position || "top-right";
+      if (c.zoom !== false) map.addControl(new maplibregl.NavigationControl({ showCompass: c.compass !== false }), pos);
+      if (c.fullscreen) map.addControl(new maplibregl.FullscreenControl(), pos);
+      if (c.locate) map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true }), pos);
+    }
+
     return () => map.remove();
   }, []);
 

@@ -8,6 +8,7 @@ import {
   type MapSpec,
   type MarkerSpec,
   type LayerSpec,
+  type ControlsSpec,
   type ColorValue,
   type SizeValue,
   resolveBasemapStyle,
@@ -158,6 +159,179 @@ function LayerTooltipContent({ properties, columns }: LayerTooltipData) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Map controls                                                       */
+/* ------------------------------------------------------------------ */
+
+const POSITION_CLASSES: Record<string, string> = {
+  "top-left": "top-2 left-2",
+  "top-right": "top-2 right-2",
+  "bottom-left": "bottom-2 left-2",
+  "bottom-right": "bottom-2 right-2",
+};
+
+function ControlButton({
+  onClick,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className="flex items-center justify-center w-[29px] h-[29px] bg-white hover:bg-gray-100 text-gray-700 border-0 cursor-pointer transition-colors duration-150"
+    >
+      {children}
+    </button>
+  );
+}
+
+function MapControls({
+  controls,
+  mapRef,
+  containerRef,
+}: {
+  controls: ControlsSpec;
+  mapRef: React.RefObject<maplibregl.Map | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const position = controls.position ?? "top-right";
+  const posClass = POSITION_CLASSES[position] ?? POSITION_CLASSES["top-right"];
+  const [bearing, setBearing] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Track bearing for compass rotation
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !controls.compass) return;
+    const onRotate = () => setBearing(map.getBearing());
+    map.on("rotate", onRotate);
+    return () => { map.off("rotate", onRotate); };
+  }, [mapRef, controls.compass]);
+
+  // Track fullscreen changes
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const showZoom = controls.zoom !== false;
+  const showCompass = controls.compass !== false;
+
+  return (
+    <div className={`absolute ${posClass} z-10 flex flex-col gap-1.5`}>
+      {/* Zoom controls */}
+      {showZoom && (
+        <div className="rounded-md overflow-hidden shadow-md divide-y divide-gray-200 border border-gray-200">
+          <ControlButton
+            onClick={() => mapRef.current?.zoomIn()}
+            title="Zoom in"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="7" y1="2" x2="7" y2="12" />
+              <line x1="2" y1="7" x2="12" y2="7" />
+            </svg>
+          </ControlButton>
+          <ControlButton
+            onClick={() => mapRef.current?.zoomOut()}
+            title="Zoom out"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="2" y1="7" x2="12" y2="7" />
+            </svg>
+          </ControlButton>
+        </div>
+      )}
+
+      {/* Compass */}
+      {showCompass && (
+        <div className="rounded-md overflow-hidden shadow-md border border-gray-200">
+          <ControlButton
+            onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 0 })}
+            title="Reset bearing"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              style={{ transform: `rotate(${-bearing}deg)`, transition: "transform 0.2s" }}
+            >
+              <polygon points="7,1 9,7 7,6 5,7" fill="#e74c3c" />
+              <polygon points="7,13 5,7 7,8 9,7" fill="#94a3b8" />
+            </svg>
+          </ControlButton>
+        </div>
+      )}
+
+      {/* Locate */}
+      {controls.locate && (
+        <div className="rounded-md overflow-hidden shadow-md border border-gray-200">
+          <ControlButton
+            onClick={() => {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  mapRef.current?.flyTo({
+                    center: [pos.coords.longitude, pos.coords.latitude],
+                    zoom: 14,
+                  });
+                },
+                () => {},
+              );
+            }}
+            title="My location"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="7" cy="7" r="3" />
+              <line x1="7" y1="0" x2="7" y2="3" />
+              <line x1="7" y1="11" x2="7" y2="14" />
+              <line x1="0" y1="7" x2="3" y2="7" />
+              <line x1="11" y1="7" x2="14" y2="7" />
+            </svg>
+          </ControlButton>
+        </div>
+      )}
+
+      {/* Fullscreen */}
+      {controls.fullscreen && (
+        <div className="rounded-md overflow-hidden shadow-md border border-gray-200">
+          <ControlButton
+            onClick={() => {
+              if (document.fullscreenElement) {
+                document.exitFullscreen();
+              } else {
+                containerRef.current?.requestFullscreen();
+              }
+            }}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <polyline points="5,1 5,5 1,5" />
+                <polyline points="9,1 9,5 13,5" />
+                <polyline points="5,13 5,9 1,9" />
+                <polyline points="9,13 9,9 13,9" />
+              </svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <polyline points="1,5 1,1 5,1" />
+                <polyline points="9,1 13,1 13,5" />
+                <polyline points="13,9 13,13 9,13" />
+                <polyline points="5,13 1,13 1,9" />
+              </svg>
+            )}
+          </ControlButton>
+        </div>
+      )}
     </div>
   );
 }
@@ -598,7 +772,15 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
   return (
     <>
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} className="relative w-full h-full">
+        {spec.controls && (
+          <MapControls
+            controls={spec.controls}
+            mapRef={mapRef}
+            containerRef={containerRef}
+          />
+        )}
+      </div>
       {/* Marker portals */}
       {entries.map(([id, p]) => {
         const ms = spec.markers?.[id];

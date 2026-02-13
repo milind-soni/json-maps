@@ -92,6 +92,19 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
     description: "named map of GeoJSON layers, each with:",
     children: LAYER_FIELDS,
   },
+  controls: {
+    description: "map UI controls overlay",
+    children: {
+      zoom: { description: "show zoom in/out buttons (default true)" },
+      compass: { description: "show compass/north arrow (default true)" },
+      fullscreen: { description: "show fullscreen toggle (default false)" },
+      locate: { description: "show locate-me button (default false)" },
+      position: {
+        description:
+          '"top-left" | "top-right" | "bottom-left" | "bottom-right" (default "top-right")',
+      },
+    },
+  },
 };
 
 /* ---- Prompt assembly ---- */
@@ -173,6 +186,7 @@ const BASE_RULES = [
   'For layers, use "/layers/<id>" to add GeoJSON layers. Use well-known public GeoJSON URLs when possible.',
   "When adding layers with data-driven color, always include the domain range for continuous palettes.",
   "Include tooltip arrays for layers so users can inspect features on hover.",
+  'When adding controls, use "/controls" path. Default shows zoom + compass at top-right. Only add controls when user requests interactive UI elements.',
 ];
 
 const COORDINATE_EXAMPLES = [
