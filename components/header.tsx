@@ -53,7 +53,7 @@ export function Header() {
             Docs
           </Link>
           <a
-            href="https://github.com/AlfredPros/json-maps"
+            href="https://github.com/milind-soni/json-maps"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"

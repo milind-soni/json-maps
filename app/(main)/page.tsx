@@ -35,7 +35,7 @@ export default function Home() {
           </Button>
           <Button size="lg" variant="outline" asChild>
             <a
-              href="https://github.com/AlfredPros/json-maps"
+              href="https://github.com/milind-soni/json-maps"
               target="_blank"
               rel="noopener noreferrer"
             >

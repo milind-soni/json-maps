@@ -1,27 +1,12 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
+import { MapRenderer } from "./map-renderer";
+import { type MapSpec } from "@/lib/spec";
 
-const CARTO_LIGHT = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
-const CARTO_DARK = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-
-const SIMULATION_PROMPT = "Show cafes near Times Square with a walking route";
-
-interface MapSpec {
-  viewport?: {
-    center?: [number, number];
-    zoom?: number;
-  };
-  layers?: Record<string, unknown>;
-  markers?: Record<string, unknown>;
-  controls?: Record<string, boolean>;
-  legend?: Record<string, string>;
-  state?: Record<string, unknown>;
-}
+const SIMULATION_PROMPT = "Switch to a dark basemap";
 
 interface SimulationStage {
   spec: MapSpec;
@@ -30,123 +15,14 @@ interface SimulationStage {
 
 const SIMULATION_STAGES: SimulationStage[] = [
   {
-    spec: {
-      viewport: { center: [-73.985, 40.758], zoom: 14 },
-    },
-    stream: '{"op":"add","path":"/viewport","value":{"center":[-73.985,40.758],"zoom":14}}',
-  },
-  {
-    spec: {
-      viewport: { center: [-73.985, 40.758], zoom: 14 },
-      markers: {
-        timesSquare: {
-          position: [-73.9855, 40.758],
-          label: "Times Square",
-          popup: { title: "Times Square", body: "Starting point" },
-        },
-      },
-    },
-    stream:
-      '{"op":"add","path":"/markers/timesSquare","value":{"position":[-73.9855,40.758],"label":"Times Square","popup":{"title":"Times Square","body":"Starting point"}}}',
-  },
-  {
-    spec: {
-      viewport: { center: [-73.985, 40.758], zoom: 14 },
-      markers: {
-        timesSquare: {
-          position: [-73.9855, 40.758],
-          label: "Times Square",
-          popup: { title: "Times Square", body: "Starting point" },
-        },
-        bluBottle: {
-          position: [-73.9826, 40.7544],
-          label: "Blue Bottle Coffee",
-        },
-        stumptown: {
-          position: [-73.9884, 40.7612],
-          label: "Stumptown Coffee",
-        },
-      },
-    },
-    stream:
-      '{"op":"add","path":"/markers/bluBottle","value":{"position":[-73.9826,40.7544],"label":"Blue Bottle Coffee"}}',
-  },
-  {
-    spec: {
-      viewport: { center: [-73.985, 40.758], zoom: 14 },
-      markers: {
-        timesSquare: {
-          position: [-73.9855, 40.758],
-          label: "Times Square",
-          popup: { title: "Times Square", body: "Starting point" },
-        },
-        bluBottle: {
-          position: [-73.9826, 40.7544],
-          label: "Blue Bottle Coffee",
-        },
-        stumptown: {
-          position: [-73.9884, 40.7612],
-          label: "Stumptown Coffee",
-        },
-      },
-      layers: {
-        walkingRoute: {
-          type: "route",
-          coordinates: [
-            [-73.9855, 40.758],
-            [-73.9849, 40.7565],
-            [-73.9826, 40.7544],
-          ],
-          color: "#3b82f6",
-          width: 4,
-        },
-      },
-    },
-    stream:
-      '{"op":"add","path":"/layers/walkingRoute","value":{"type":"route","coordinates":[[-73.9855,40.758],[-73.9849,40.7565],[-73.9826,40.7544]],"color":"#3b82f6","width":4}}',
-  },
-  {
-    spec: {
-      viewport: { center: [-73.985, 40.758], zoom: 14 },
-      markers: {
-        timesSquare: {
-          position: [-73.9855, 40.758],
-          label: "Times Square",
-          popup: { title: "Times Square", body: "Starting point" },
-        },
-        bluBottle: {
-          position: [-73.9826, 40.7544],
-          label: "Blue Bottle Coffee",
-        },
-        stumptown: {
-          position: [-73.9884, 40.7612],
-          label: "Stumptown Coffee",
-        },
-      },
-      layers: {
-        walkingRoute: {
-          type: "route",
-          coordinates: [
-            [-73.9855, 40.758],
-            [-73.9849, 40.7565],
-            [-73.9826, 40.7544],
-          ],
-          color: "#3b82f6",
-          width: 4,
-        },
-      },
-      controls: { zoom: true, compass: true },
-    },
-    stream:
-      '{"op":"add","path":"/controls","value":{"zoom":true,"compass":true}}',
+    spec: { basemap: "dark" },
+    stream: '{"op":"replace","path":"/basemap","value":"dark"}',
   },
 ];
 
 const EXAMPLE_PROMPTS = [
-  "Earthquake clusters on a world map",
-  "Delivery route from warehouse to 3 stops",
-  "US states colored by population",
-  "Heatmap of bike accidents in NYC",
+  "Use streets basemap",
+  "Switch to light theme",
 ];
 
 type Phase = "typing" | "streaming" | "complete";
@@ -155,16 +31,10 @@ type Tab = "spec" | "stream";
 export function Demo() {
   const [phase, setPhase] = useState<Phase>("typing");
   const [typedPrompt, setTypedPrompt] = useState("");
-  const [stageIndex, setStageIndex] = useState(-1);
   const [streamLines, setStreamLines] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>("spec");
-  const [simulationSpec, setSimulationSpec] = useState<MapSpec | null>(null);
+  const [currentSpec, setCurrentSpec] = useState<MapSpec>({ basemap: "light" });
   const inputRef = useRef<HTMLInputElement>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-
-  const currentSpec =
-    stageIndex >= 0 ? SIMULATION_STAGES[stageIndex]?.spec : simulationSpec;
 
   // Typing effect
   useEffect(() => {
@@ -193,9 +63,8 @@ export function Demo() {
       if (i < SIMULATION_STAGES.length) {
         const stage = SIMULATION_STAGES[i];
         if (stage) {
-          setStageIndex(i);
           setStreamLines((prev) => [...prev, stage.stream]);
-          setSimulationSpec(stage.spec);
+          setCurrentSpec(stage.spec);
         }
         i++;
       } else {
@@ -210,52 +79,15 @@ export function Demo() {
   const handleReplay = useCallback(() => {
     setPhase("typing");
     setTypedPrompt("");
-    setStageIndex(-1);
     setStreamLines([]);
-    setSimulationSpec(null);
+    setCurrentSpec({ basemap: "light" });
   }, []);
 
   const isTyping = phase === "typing";
   const isStreaming = phase === "streaming";
   const showLoadingDots = isStreaming;
 
-  const jsonCode = currentSpec
-    ? JSON.stringify(currentSpec, null, 2)
-    : "// waiting...";
-
-  // Initialize MapLibre map
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
-
-    const isDark = document.documentElement.classList.contains("dark");
-
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: isDark ? CARTO_DARK : CARTO_LIGHT,
-      center: [-73.985, 40.758],
-      zoom: 14,
-      attributionControl: false,
-    });
-
-    mapRef.current = map;
-
-    // Watch for theme changes
-    const observer = new MutationObserver(() => {
-      const nowDark = document.documentElement.classList.contains("dark");
-      map.setStyle(nowDark ? CARTO_DARK : CARTO_LIGHT);
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => {
-      observer.disconnect();
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
+  const jsonCode = JSON.stringify(currentSpec, null, 2);
 
   return (
     <div className="w-full text-left max-w-5xl mx-auto">
@@ -315,7 +147,7 @@ export function Demo() {
           )}
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
-          {EXAMPLE_PROMPTS.slice(0, 2).map((prompt) => (
+          {EXAMPLE_PROMPTS.map((prompt) => (
             <button
               key={prompt}
               className="text-xs px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-colors"
@@ -401,7 +233,7 @@ export function Demo() {
             </span>
           </div>
           <div className="border border-border rounded overflow-hidden relative h-[28rem]">
-            <div ref={mapContainerRef} className="w-full h-full" />
+            <MapRenderer spec={currentSpec} />
           </div>
         </div>
       </div>
