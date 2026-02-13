@@ -25,16 +25,19 @@ Open [http://localhost:3000](http://localhost:3000) to see the landing page, or 
 ```bash
 json-maps/
 ├── lib/
-│   └── spec.ts           # MapSpec type + basemap resolver
+│   ├── spec.ts              # MapSpec type + basemap resolver
+│   ├── use-map-stream.ts    # JSONL streaming hook for AI generation
+│   └── generate-code.ts     # Static code + export generation
 ├── components/
-│   ├── map-renderer.tsx   # Core renderer: spec → map
-│   ├── playground.tsx     # JSON editor + live preview
-│   └── demo.tsx           # Landing page AI demo
+│   ├── map-renderer.tsx     # Core renderer: spec → map (markers, popups)
+│   ├── playground.tsx       # JSON editor + live preview
+│   └── demo.tsx             # Landing page AI demo
 ├── app/
-│   ├── (main)/page.tsx    # Landing page
-│   ├── playground/        # Playground route
-│   └── docs/              # Documentation
-└── PLAN.md                # Full project plan
+│   ├── (main)/page.tsx      # Landing page
+│   ├── api/generate/        # AI generation API route
+│   ├── playground/          # Playground route
+│   └── docs/                # Documentation
+└── PLAN.md                  # Full project plan
 ```
 
 ## Dependencies

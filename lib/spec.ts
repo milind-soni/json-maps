@@ -1,3 +1,18 @@
+export interface PopupSpec {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+export interface MarkerSpec {
+  coordinates: [number, number];
+  color?: string;
+  label?: string;
+  tooltip?: string;
+  popup?: string | PopupSpec;
+  draggable?: boolean;
+}
+
 export interface MapSpec {
   basemap?: "light" | "dark" | "streets" | (string & {});
   center?: [number, number];
@@ -5,6 +20,7 @@ export interface MapSpec {
   pitch?: number;
   bearing?: number;
   bounds?: [number, number, number, number];
+  markers?: Record<string, MarkerSpec>;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {

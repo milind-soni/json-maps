@@ -9,7 +9,7 @@ import { type MapSpec } from "@/lib/spec";
 import { generateStaticCode } from "@/lib/generate-code";
 import { useMapStream } from "@/lib/use-map-stream";
 
-const SIMULATION_PROMPT = "Show me Tokyo at night with a tilted view";
+const SIMULATION_PROMPT = "Show me Tokyo at night with landmarks";
 
 interface SimulationStage {
   spec: MapSpec;
@@ -39,9 +39,95 @@ const SIMULATION_STAGES: SimulationStage[] = [
       center: [139.69, 35.68],
       zoom: 12,
       pitch: 45,
-      bearing: -17,
+      markers: {
+        "tokyo-tower": {
+          coordinates: [139.7454, 35.6586],
+          color: "#e74c3c",
+          label: "Tokyo Tower",
+          tooltip: "Observation tower · Minato",
+          popup: {
+            title: "Tokyo Tower",
+            description: "333m tall communications and observation tower, inspired by the Eiffel Tower",
+          },
+        },
+      },
     },
-    stream: '{"op":"replace","path":"/bearing","value":-17}',
+    stream:
+      '{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","label":"Tokyo Tower","tooltip":"Observation tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}',
+  },
+  {
+    spec: {
+      basemap: "dark",
+      center: [139.69, 35.68],
+      zoom: 12,
+      pitch: 45,
+      markers: {
+        "tokyo-tower": {
+          coordinates: [139.7454, 35.6586],
+          color: "#e74c3c",
+          label: "Tokyo Tower",
+          tooltip: "Observation tower · Minato",
+          popup: {
+            title: "Tokyo Tower",
+            description: "333m tall communications and observation tower, inspired by the Eiffel Tower",
+          },
+        },
+        shibuya: {
+          coordinates: [139.7013, 35.658],
+          color: "#3498db",
+          label: "Shibuya Crossing",
+          tooltip: "Iconic scramble crossing · Shibuya",
+          popup: {
+            title: "Shibuya Crossing",
+            description: "World's busiest pedestrian crossing with up to 3,000 people per light change",
+          },
+        },
+      },
+    },
+    stream:
+      '{"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","label":"Shibuya Crossing","tooltip":"Iconic scramble crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World\'s busiest pedestrian crossing with up to 3,000 people per light change"}}}',
+  },
+  {
+    spec: {
+      basemap: "dark",
+      center: [139.69, 35.68],
+      zoom: 12,
+      pitch: 45,
+      markers: {
+        "tokyo-tower": {
+          coordinates: [139.7454, 35.6586],
+          color: "#e74c3c",
+          label: "Tokyo Tower",
+          tooltip: "Observation tower · Minato",
+          popup: {
+            title: "Tokyo Tower",
+            description: "333m tall communications and observation tower, inspired by the Eiffel Tower",
+          },
+        },
+        shibuya: {
+          coordinates: [139.7013, 35.658],
+          color: "#3498db",
+          label: "Shibuya Crossing",
+          tooltip: "Iconic scramble crossing · Shibuya",
+          popup: {
+            title: "Shibuya Crossing",
+            description: "World's busiest pedestrian crossing with up to 3,000 people per light change",
+          },
+        },
+        "senso-ji": {
+          coordinates: [139.7966, 35.7148],
+          color: "#f39c12",
+          label: "Senso-ji",
+          tooltip: "Buddhist temple · Asakusa",
+          popup: {
+            title: "Senso-ji",
+            description: "Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa.",
+          },
+        },
+      },
+    },
+    stream:
+      '{"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","label":"Senso-ji","tooltip":"Buddhist temple · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo\'s oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}',
   },
 ];
 

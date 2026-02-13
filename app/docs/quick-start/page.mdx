@@ -17,6 +17,14 @@ const spec = {
   basemap: "dark",
   center: [-73.98, 40.75],
   zoom: 13,
+  markers: {
+    "empire-state": {
+      coordinates: [-73.9857, 40.7484],
+      color: "#e74c3c",
+      label: "Empire State Building",
+      popup: "Iconic 102-story Art Deco skyscraper",
+    },
+  },
 };
 ```
 
@@ -38,13 +46,25 @@ Try pasting this:
 {
   "basemap": "streets",
   "center": [-122.4194, 37.7749],
-  "zoom": 12,
+  "zoom": 13,
   "pitch": 60,
-  "bearing": -30
+  "bearing": -30,
+  "markers": {
+    "golden-gate": {
+      "coordinates": [-122.4786, 37.8199],
+      "color": "#e74c3c",
+      "label": "Golden Gate Bridge"
+    },
+    "fishermans-wharf": {
+      "coordinates": [-122.4177, 37.8080],
+      "color": "#3498db",
+      "label": "Fisherman's Wharf"
+    }
+  }
 }
 ```
 
-This shows San Francisco with a 3D perspective on the streets basemap.
+This shows San Francisco with a 3D perspective, street basemap, and two markers.
 
 ## Reactive Updates
 
@@ -53,6 +73,7 @@ The renderer reacts to spec changes. When you update the spec object, the map sm
 - **Basemap** changes swap the style
 - **Viewport** changes animate with `flyTo()`
 - **Bounds** changes use `fitBounds()` with padding
+- **Markers** are diffed by key — added, updated, or removed individually
 
 ```tsx
 // Change the spec and the map animates

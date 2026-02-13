@@ -22,13 +22,26 @@ This makes maps:
 ```json
 {
   "basemap": "dark",
-  "center": [77.59, 12.97],
+  "center": [139.69, 35.68],
   "zoom": 12,
-  "pitch": 45
+  "pitch": 45,
+  "markers": {
+    "tokyo-tower": {
+      "coordinates": [139.7454, 35.6586],
+      "color": "#e74c3c",
+      "label": "Tokyo Tower",
+      "popup": "333m tall communications and observation tower"
+    },
+    "shibuya": {
+      "coordinates": [139.7013, 35.6580],
+      "color": "#3498db",
+      "label": "Shibuya Crossing"
+    }
+  }
 }
 ```
 
-This gives you a dark-themed map centered on Bangalore with a tilted perspective. Every field is optional — an empty `{}` gives you a light basemap at world view.
+This gives you a dark-themed map centered on Tokyo with a tilted perspective and two markers. Every field is optional — an empty `{}` gives you a light basemap at world view.
 
 ## What's in the Spec
 
@@ -38,10 +51,10 @@ The spec grows incrementally. Here's what's available and what's coming:
 
 - [Basemap](/docs/basemap) — `light`, `dark`, `streets`, or custom style URL
 - [Viewport](/docs/viewport) — `center`, `zoom`, `pitch`, `bearing`, `bounds`
+- [Markers](/docs/markers) — named pins with colors, labels, and popups
 
 **Coming soon:**
 
-- [Markers](/docs/markers) — named pins with labels and popups
 - [Layers](/docs/layers) — GeoJSON, MVT, raster, PMTiles
 - [Controls](/docs/controls) — zoom, compass, scale bar
 - [Widgets](/docs/widgets) — legend, layer toggle, basemap switcher

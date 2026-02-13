@@ -146,6 +146,26 @@ export default function MapPage() {
       });
     }
 
+    // Add markers
+    if (spec.markers) {
+      for (const [, m] of Object.entries(spec.markers)) {
+        const marker = new maplibregl.Marker({ color: m.color || undefined })
+          .setLngLat(m.coordinates)
+          .addTo(map);
+        if (m.popup) {
+          const p = typeof m.popup === "object" ? m.popup : { description: m.popup };
+          const html = [
+            p.image ? \`<img src="\${p.image}" style="width:100%;height:128px;object-fit:cover;border-radius:6px 6px 0 0;" />\` : "",
+            \`<div style="padding:10px 14px;">\`,
+            p.title ? \`<div style="font-weight:600;margin-bottom:2px;">\${p.title}</div>\` : "",
+            p.description ? \`<div style="opacity:0.7;font-size:13px;">\${p.description}</div>\` : "",
+            \`</div>\`,
+          ].join("");
+          marker.setPopup(new maplibregl.Popup({ offset: 25, maxWidth: "260px" }).setHTML(html));
+        }
+      }
+    }
+
     return () => map.remove();
   }, []);
 

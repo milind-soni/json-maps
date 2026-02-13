@@ -45,13 +45,48 @@ function parseLine(line: string): ParsedLine {
 
 function applyPatch(spec: MapSpec, patch: JsonPatch): MapSpec {
   const newSpec = { ...spec };
-  const key = patch.path.replace(/^\//, "") as keyof MapSpec;
+  const parts = patch.path.replace(/^\//, "").split("/");
+  const topKey = parts[0] as string;
 
-  if (patch.op === "remove") {
-    delete newSpec[key];
-  } else {
-    // add or replace
-    (newSpec as Record<string, unknown>)[key] = patch.value;
+  if (parts.length === 1) {
+    // Top-level: /basemap, /center, /markers, etc.
+    if (patch.op === "remove") {
+      delete (newSpec as Record<string, unknown>)[topKey];
+    } else {
+      (newSpec as Record<string, unknown>)[topKey] = patch.value;
+    }
+  } else if (parts.length === 2) {
+    // Nested: /markers/home — set individual item within a map
+    const subKey = parts[1] as string;
+    const parent = { ...((newSpec as Record<string, unknown>)[topKey] as Record<string, unknown> ?? {}) };
+    if (patch.op === "remove") {
+      delete parent[subKey];
+    } else {
+      parent[subKey] = patch.value;
+    }
+    (newSpec as Record<string, unknown>)[topKey] = parent;
+  } else if (parts.length >= 3) {
+    // Deep nested: /markers/home/coordinates — set property within an item
+    const subKey = parts[1] as string;
+    const propPath = parts.slice(2);
+    const parent = { ...((newSpec as Record<string, unknown>)[topKey] as Record<string, unknown> ?? {}) };
+    const item = { ...(parent[subKey] as Record<string, unknown> ?? {}) };
+    if (patch.op === "remove") {
+      let target: Record<string, unknown> = item;
+      for (let i = 0; i < propPath.length - 1; i++) {
+        target = target[propPath[i]!] as Record<string, unknown>;
+      }
+      delete target[propPath[propPath.length - 1]!];
+    } else {
+      let target: Record<string, unknown> = item;
+      for (let i = 0; i < propPath.length - 1; i++) {
+        if (!target[propPath[i]!]) target[propPath[i]!] = {};
+        target = target[propPath[i]!] as Record<string, unknown>;
+      }
+      target[propPath[propPath.length - 1]!] = patch.value;
+    }
+    parent[subKey] = item;
+    (newSpec as Record<string, unknown>)[topKey] = parent;
   }
 
   return newSpec;

@@ -2,11 +2,9 @@ export const metadata = { title: "Markers" }
 
 # Markers
 
-> Markers are coming soon. This page describes the planned API.
+Markers are named pins on the map with optional colors, labels, tooltips, and popups.
 
-Markers are named pins on the map with optional labels and popups.
-
-## Planned Spec
+## Basic Usage
 
 ```json
 {
@@ -15,12 +13,17 @@ Markers are named pins on the map with optional labels and popups.
       "coordinates": [-73.98, 40.75],
       "color": "#e74c3c",
       "label": "Home",
-      "popup": "Starting point"
+      "tooltip": "Starting point · Midtown",
+      "popup": {
+        "title": "Home",
+        "description": "Starting point"
+      }
     },
     "office": {
       "coordinates": [-73.99, 40.74],
       "color": "#3498db",
-      "label": "Office"
+      "label": "Office",
+      "tooltip": "Workspace · Chelsea"
     }
   }
 }
@@ -28,11 +31,51 @@ Markers are named pins on the map with optional labels and popups.
 
 ## Properties
 
-- **`coordinates`** — `[lng, lat]` — marker position (required)
-- **`color`** — `string` — marker color
-- **`label`** — `string` — text label displayed near marker
-- **`popup`** — `string` — content shown on click
-- **`draggable`** — `boolean` — whether marker can be dragged
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `coordinates` | `[lng, lat]` | Yes | Marker position |
+| `color` | `string` | No | Marker color (hex) |
+| `label` | `string` | No | Text displayed below the marker |
+| `tooltip` | `string` | No | Short text shown on hover |
+| `popup` | `string \| PopupSpec` | No | Content shown when marker is clicked |
+| `draggable` | `boolean` | No | Whether the marker can be dragged |
+
+## Tooltip vs Popup
+
+- **Tooltip** — appears on hover, disappears on mouse leave. Short, one-line text.
+- **Popup** — appears on click. Can contain title, description, and image.
+
+## Popup Formats
+
+The `popup` field accepts either a simple string or a rich object:
+
+**Simple string:**
+
+```json
+{
+  "popup": "A brief description"
+}
+```
+
+**Rich popup with title, description, and image:**
+
+```json
+{
+  "popup": {
+    "title": "Eiffel Tower",
+    "description": "330m iron lattice tower on the Champ de Mars",
+    "image": "https://example.com/eiffel.jpg"
+  }
+}
+```
+
+### PopupSpec Properties
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `title` | `string` | No | Bold heading at the top |
+| `description` | `string` | No | Body text below the title |
+| `image` | `string` | No | Image URL shown above the content |
 
 ## Why Named Map?
 
@@ -41,3 +84,14 @@ Markers use a named map (`{ "home": {...} }`) instead of an array. This makes it
 - Reference individual markers by key
 - Update or remove a specific marker via JSON patches
 - Stream marker additions without replacing the whole array
+
+## Streaming Example
+
+When AI generates markers, each one arrives as a separate JSONL patch:
+
+```json
+{"op":"add","path":"/markers/tower","value":{"coordinates":[2.2945,48.8584],"color":"#e74c3c","label":"Eiffel Tower","popup":{"title":"Eiffel Tower","description":"330m iron lattice tower, built in 1889"}}}
+{"op":"add","path":"/markers/louvre","value":{"coordinates":[2.3376,48.8606],"color":"#3498db","label":"Louvre Museum","popup":{"title":"Louvre Museum","description":"World's largest art museum, home to the Mona Lisa"}}}
+```
+
+Each marker appears on the map as soon as its patch arrives.

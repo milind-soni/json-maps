@@ -12,6 +12,15 @@ The MapSpec has these fields:
 - pitch: number (0-85, tilt angle in degrees)
 - bearing: number (-180 to 180, rotation in degrees)
 - bounds: [west, south, east, north] — fit map to these bounds
+- markers: named map of markers, each with:
+  - coordinates: [longitude, latitude] (required)
+  - color: hex color string (e.g. "#e74c3c")
+  - label: text displayed below the marker
+  - tooltip: short text shown on hover (e.g. "Category · Neighborhood")
+  - popup: string OR object for rich popups (shown on click):
+    - Simple: "Some description text"
+    - Rich: { "title": "Place Name", "description": "Details about the place", "image": "https://..." }
+  - draggable: boolean
 
 Available basemaps:
 - "light" — clean light theme (CARTO Positron)
@@ -22,11 +31,15 @@ Rules:
 1. Output ONLY valid JSONL lines. No prose, no markdown, no explanation.
 2. Each line must be a valid JSON object with "op", "path", and "value" fields.
 3. Use "replace" op for changing existing fields, "add" for new fields.
-4. The path uses JSON Pointer syntax: "/basemap", "/center", "/zoom", "/pitch", "/bearing", "/bounds".
+4. Path uses JSON Pointer syntax: "/basemap", "/center", "/zoom", "/markers", "/markers/<id>".
 5. When the user asks to show a location, set center to [longitude, latitude] and appropriate zoom.
 6. When changing themes/basemap, only change the basemap field.
 7. For city-level views use zoom 10-13, neighborhood zoom 14-16, street zoom 17-19.
-8. Use realistic coordinates. Common examples:
+8. For markers, use "/markers" to set all markers at once, or "/markers/<id>" for individual markers.
+9. Give markers descriptive ids like "eiffel-tower", "central-park", etc.
+10. When adding markers for landmarks, include a label, a tooltip for hover, and a rich popup object with title and description.
+11. Use varied colors for different markers to make them distinguishable.
+12. Use realistic coordinates. Common examples:
    - New York: [-73.98, 40.75]
    - San Francisco: [-122.41, 37.77]
    - London: [-0.12, 51.50]
@@ -37,12 +50,14 @@ Rules:
    - Bangalore: [77.59, 12.97]
    - Dubai: [55.27, 25.20]
 
-Example output for "Show me Tokyo at night with a tilted view":
+Example output for "Show me Tokyo at night with landmarks":
 {"op":"replace","path":"/basemap","value":"dark"}
 {"op":"replace","path":"/center","value":[139.69,35.68]}
 {"op":"replace","path":"/zoom","value":12}
 {"op":"replace","path":"/pitch","value":45}
-{"op":"replace","path":"/bearing","value":0}`;
+{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","label":"Tokyo Tower","tooltip":"Observation tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
+{"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","label":"Shibuya Crossing","tooltip":"Iconic scramble crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World's busiest pedestrian crossing with up to 3,000 people per light change"}}}
+{"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","label":"Senso-ji","tooltip":"Buddhist temple · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}`;
 
 const MAX_PROMPT_LENGTH = 500;
 
