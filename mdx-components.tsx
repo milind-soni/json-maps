@@ -112,13 +112,17 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     thead: ({ children }) => (
       <thead className="border-b border-border">{children}</thead>
     ),
+    tbody: ({ children }) => <tbody>{children}</tbody>,
+    tr: ({ children }) => (
+      <tr className="border-b border-border/50">{children}</tr>
+    ),
     th: ({ children }) => (
       <th className="text-left py-2 px-3 font-medium text-foreground">
         {children}
       </th>
     ),
     td: ({ children }) => (
-      <td className="py-2 px-3 text-muted-foreground border-b border-border/50">
+      <td className="py-2 px-3 text-muted-foreground">
         {children}
       </td>
     ),
