@@ -6,6 +6,7 @@ import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
 import { ExportModal } from "./export-modal";
 import { type MapSpec } from "@/lib/spec";
+import { validateSpec } from "@/lib/spec-schema";
 import { generateStaticCode } from "@/lib/generate-code";
 
 const DEFAULT_SPEC: MapSpec = {
@@ -33,9 +34,17 @@ export function Playground() {
 
     debounceRef.current = setTimeout(() => {
       try {
-        const parsed = JSON.parse(jsonText) as MapSpec;
-        setSpec(parsed);
-        setError(null);
+        const parsed = JSON.parse(jsonText);
+        const result = validateSpec(parsed);
+        if (result.success) {
+          setSpec(result.data as MapSpec);
+          setError(null);
+        } else {
+          // Still update the map with what we can parse —
+          // show the validation error but render best-effort
+          setSpec(parsed as MapSpec);
+          setError(result.error);
+        }
       } catch (e) {
         setError((e as Error).message);
       }

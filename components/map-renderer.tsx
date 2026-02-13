@@ -187,6 +187,8 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
   // Layer tracking
   const pendingLayerSyncRef = useRef(false);
   const layerSpecsRef = useRef<Record<string, string>>({});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const layerHandlersRef = useRef<Record<string, Array<{ event: string; layer: string; handler: any }>>>({});
   const layerTooltipPopupRef = useRef<maplibregl.Popup | null>(null);
   const layerTooltipContainerRef = useRef<HTMLDivElement | null>(null);
   const [layerTooltip, setLayerTooltip] = useState<LayerTooltipData | null>(
@@ -263,102 +265,129 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     layer: LayerSpec,
   ) {
     const sourceId = `jm-${id}`;
-    const style = layer.style ?? {};
-    const opacity = style.opacity ?? 0.8;
 
-    map.addSource(sourceId, {
-      type: "geojson",
-      data: layer.data as string | GeoJSON.GeoJSON,
-    });
+    try {
+      const style = layer.style ?? {};
+      const opacity = style.opacity ?? 0.8;
 
-    // Fill layer (polygons)
-    const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
-    map.addLayer({
-      id: `${sourceId}-fill`,
-      type: "fill",
-      source: sourceId,
-      filter: [
-        "any",
-        ["==", ["geometry-type"], "Polygon"],
-        ["==", ["geometry-type"], "MultiPolygon"],
-      ],
-      paint: {
-        "fill-color": fillColor,
-        "fill-opacity": opacity,
-      },
-    });
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: layer.data as string | GeoJSON.GeoJSON,
+      });
 
-    // Line layer (lines + polygon outlines)
-    const lineColor = colorValueToExpression(style.lineColor ?? "#333333");
-    map.addLayer({
-      id: `${sourceId}-line`,
-      type: "line",
-      source: sourceId,
-      paint: {
-        "line-color": lineColor,
-        "line-width": style.lineWidth ?? 1,
-        "line-opacity": Math.min(opacity + 0.1, 1),
-      },
-    });
+      // Fill layer (polygons)
+      const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
+      map.addLayer({
+        id: `${sourceId}-fill`,
+        type: "fill",
+        source: sourceId,
+        filter: [
+          "any",
+          ["==", ["geometry-type"], "Polygon"],
+          ["==", ["geometry-type"], "MultiPolygon"],
+        ],
+        paint: {
+          "fill-color": fillColor,
+          "fill-opacity": opacity,
+        },
+      });
 
-    // Circle layer (points)
-    const pointColor = colorValueToExpression(
-      style.pointColor ?? style.fillColor ?? "#3b82f6",
-    );
-    map.addLayer({
-      id: `${sourceId}-circle`,
-      type: "circle",
-      source: sourceId,
-      filter: [
-        "any",
-        ["==", ["geometry-type"], "Point"],
-        ["==", ["geometry-type"], "MultiPoint"],
-      ],
-      paint: {
-        "circle-color": pointColor,
-        "circle-radius": sizeValueToExpression(style.pointRadius ?? 5, 5),
-        "circle-opacity": opacity,
-        "circle-stroke-width": style.lineWidth ?? 1,
-        "circle-stroke-color": lineColor,
-      },
-    });
+      // Line layer (lines + polygon outlines)
+      const lineColor = colorValueToExpression(style.lineColor ?? "#333333");
+      map.addLayer({
+        id: `${sourceId}-line`,
+        type: "line",
+        source: sourceId,
+        paint: {
+          "line-color": lineColor,
+          "line-width": style.lineWidth ?? 1,
+          "line-opacity": Math.min(opacity + 0.1, 1),
+        },
+      });
 
-    // Hover tooltip
-    if (layer.tooltip && layer.tooltip.length > 0) {
-      const columns = layer.tooltip;
-      const subLayers = [
-        `${sourceId}-fill`,
-        `${sourceId}-circle`,
-        `${sourceId}-line`,
-      ];
+      // Circle layer (points)
+      const pointColor = colorValueToExpression(
+        style.pointColor ?? style.fillColor ?? "#3b82f6",
+      );
+      map.addLayer({
+        id: `${sourceId}-circle`,
+        type: "circle",
+        source: sourceId,
+        filter: [
+          "any",
+          ["==", ["geometry-type"], "Point"],
+          ["==", ["geometry-type"], "MultiPoint"],
+        ],
+        paint: {
+          "circle-color": pointColor,
+          "circle-radius": sizeValueToExpression(style.pointRadius ?? 5, 5),
+          "circle-opacity": opacity,
+          "circle-stroke-width": style.lineWidth ?? 1,
+          "circle-stroke-color": lineColor,
+        },
+      });
 
-      for (const subLayer of subLayers) {
-        map.on("mousemove", subLayer, (e) => {
-          if (!e.features || e.features.length === 0) return;
-          const props = (e.features[0].properties ?? {}) as Record<
-            string,
-            unknown
-          >;
-          map.getCanvas().style.cursor = "pointer";
-          setLayerTooltip({ properties: props, columns });
+      // Hover tooltip
+      if (layer.tooltip && layer.tooltip.length > 0) {
+        const columns = layer.tooltip;
+        const subLayers = [
+          `${sourceId}-fill`,
+          `${sourceId}-circle`,
+          `${sourceId}-line`,
+        ];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const handlers: Array<{ event: string; layer: string; handler: any }> = [];
 
-          const popup = layerTooltipPopupRef.current;
-          if (popup) {
-            popup.setLngLat(e.lngLat).addTo(map);
-          }
-        });
+        for (const subLayer of subLayers) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const onMove = (e: any) => {
+            if (!e.features || e.features.length === 0) return;
+            const props = (e.features[0].properties ?? {}) as Record<
+              string,
+              unknown
+            >;
+            map.getCanvas().style.cursor = "pointer";
+            setLayerTooltip({ properties: props, columns });
 
-        map.on("mouseleave", subLayer, () => {
-          map.getCanvas().style.cursor = "";
-          setLayerTooltip(null);
-          layerTooltipPopupRef.current?.remove();
-        });
+            const popup = layerTooltipPopupRef.current;
+            if (popup) {
+              popup.setLngLat(e.lngLat).addTo(map);
+            }
+          };
+          const onLeave = () => {
+            map.getCanvas().style.cursor = "";
+            setLayerTooltip(null);
+            layerTooltipPopupRef.current?.remove();
+          };
+
+          map.on("mousemove", subLayer, onMove);
+          map.on("mouseleave", subLayer, onLeave);
+          handlers.push({ event: "mousemove", layer: subLayer, handler: onMove });
+          handlers.push({ event: "mouseleave", layer: subLayer, handler: onLeave });
+        }
+
+        layerHandlersRef.current[sourceId] = handlers;
       }
+    } catch (err) {
+      console.warn(`[json-maps] Failed to add layer "${id}":`, err);
+      // Clean up partial state if source was added but layers failed
+      try { removeGeoJsonLayer(map, id); } catch { /* ignore */ }
     }
   }
 
   function removeGeoJsonLayer(map: maplibregl.Map, id: string) {
     const sourceId = `jm-${id}`;
+
+    // Remove event listeners first
+    const handlers = layerHandlersRef.current[sourceId];
+    if (handlers) {
+      for (const h of handlers) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (map as any).off(h.event, h.layer, h.handler);
+      }
+      delete layerHandlersRef.current[sourceId];
+    }
+
     const subLayers = [
       `${sourceId}-circle`,
       `${sourceId}-line`,

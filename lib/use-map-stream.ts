@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { type MapSpec } from "./spec";
+import { autoFixSpec, formatSpecIssues } from "./spec-schema";
 
 export interface TokenUsage {
   promptTokens: number;
@@ -140,12 +141,15 @@ export function useMapStream({
         : {};
       setSpec(currentSpec);
 
-      try {
+      // Stream patches from a single API call and apply them to currentSpec
+      async function streamPatches(
+        body: Record<string, unknown>,
+      ): Promise<void> {
         const response = await fetch(api, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, context }),
-          signal: abortControllerRef.current.signal,
+          body: JSON.stringify(body),
+          signal: abortControllerRef.current!.signal,
         });
 
         if (!response.ok) {
@@ -189,7 +193,6 @@ export function useMapStream({
           }
         }
 
-        // Process remaining buffer
         if (buffer.trim()) {
           const result = parseLine(buffer.trim());
           if (result) {
@@ -200,6 +203,34 @@ export function useMapStream({
               currentSpec = applyPatch(currentSpec, result.patch);
               setSpec({ ...currentSpec });
             }
+          }
+        }
+      }
+
+      try {
+        // Main generation pass
+        await streamPatches({ prompt, context });
+
+        // Auto-fix the final spec (strip unknown keys, coerce values)
+        const fixed = autoFixSpec(currentSpec);
+        if (fixed) {
+          currentSpec = fixed as MapSpec;
+          setSpec({ ...currentSpec });
+        }
+
+        // Repair pass: if spec still has validation errors, ask AI to fix them
+        const issues = formatSpecIssues(currentSpec);
+        if (issues) {
+          await streamPatches({
+            prompt: issues,
+            context: { previousSpec: currentSpec },
+          });
+
+          // Auto-fix again after repair
+          const repairFixed = autoFixSpec(currentSpec);
+          if (repairFixed) {
+            currentSpec = repairFixed as MapSpec;
+            setSpec({ ...currentSpec });
           }
         }
 

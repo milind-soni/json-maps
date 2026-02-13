@@ -1,4 +1,53 @@
-import { type MapSpec } from "./spec";
+import { type MapSpec, type ColorValue, type SizeValue } from "./spec";
+import { PALETTES } from "./palettes";
+
+/* ---- Pre-resolve data-driven values to MapLibre expressions at export time ---- */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveColor(color: ColorValue): any {
+  if (typeof color === "string") return color;
+
+  const palette = PALETTES[color.palette];
+  if (!palette || palette.length === 0) return "#888888";
+
+  if (color.type === "continuous") {
+    const [min, max] = color.domain ?? [0, 1];
+    const steps = palette.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expr: any[] = ["interpolate", ["linear"], ["get", color.attr]];
+    for (let i = 0; i < steps; i++) {
+      expr.push(min + (max - min) * (i / (steps - 1)));
+      expr.push(palette[i]);
+    }
+    return expr;
+  }
+
+  if (color.type === "categorical") {
+    if (!color.categories || color.categories.length === 0)
+      return palette[0] ?? "#888888";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expr: any[] = ["match", ["get", color.attr]];
+    for (let i = 0; i < color.categories.length; i++) {
+      expr.push(color.categories[i]);
+      expr.push(palette[i % palette.length]);
+    }
+    expr.push(color.nullColor ?? "#cccccc");
+    return expr;
+  }
+
+  return "#888888";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveSize(size: SizeValue, fallback: number): any {
+  if (typeof size === "number") return size;
+  if (size.type === "continuous") {
+    const [dMin, dMax] = size.domain;
+    const [rMin, rMax] = size.range;
+    return ["interpolate", ["linear"], ["get", size.attr], dMin, rMin, dMax, rMax];
+  }
+  return fallback;
+}
 
 export function generateStaticCode(spec: MapSpec): string {
   const specStr = JSON.stringify(spec, null, 2)
@@ -26,8 +75,32 @@ interface ExportFile {
   lang: "json" | "tsx" | "typescript";
 }
 
+/**
+ * Pre-resolve data-driven color/size values in the spec to MapLibre expressions.
+ * This lets the exported code use the values directly without needing PALETTES.
+ */
+function resolveSpecForExport(spec: MapSpec): MapSpec {
+  const resolved = structuredClone(spec);
+  if (!resolved.layers) return resolved;
+
+  for (const layer of Object.values(resolved.layers)) {
+    if (layer.type !== "geojson" || !layer.style) continue;
+    const s = layer.style;
+    if (s.fillColor && typeof s.fillColor !== "string")
+      s.fillColor = resolveColor(s.fillColor) as unknown as ColorValue;
+    if (s.pointColor && typeof s.pointColor !== "string")
+      s.pointColor = resolveColor(s.pointColor) as unknown as ColorValue;
+    if (s.lineColor && typeof s.lineColor !== "string")
+      s.lineColor = resolveColor(s.lineColor) as unknown as ColorValue;
+    if (s.pointRadius && typeof s.pointRadius !== "number")
+      s.pointRadius = resolveSize(s.pointRadius, 5) as unknown as SizeValue;
+  }
+  return resolved;
+}
+
 export function generateExportFiles(spec: MapSpec): ExportFile[] {
-  const specStr = JSON.stringify(spec, null, 2);
+  const resolved = resolveSpecForExport(spec);
+  const specStr = JSON.stringify(resolved, null, 2);
 
   return [
     {
@@ -190,9 +263,7 @@ export default function MapPage() {
             filter: ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]],
             paint: {
               "circle-color": s.pointColor || s.fillColor || "#3b82f6",
-              "circle-radius": s.pointRadius && s.pointRadius.type === "continuous"
-                ? ["interpolate", ["linear"], ["get", s.pointRadius.attr], s.pointRadius.domain[0], s.pointRadius.range[0], s.pointRadius.domain[1], s.pointRadius.range[1]]
-                : (s.pointRadius ?? 5),
+              "circle-radius": s.pointRadius || 5,
               "circle-opacity": s.opacity ?? 0.8,
               "circle-stroke-width": s.lineWidth ?? 1, "circle-stroke-color": s.lineColor || "#333333",
             },
