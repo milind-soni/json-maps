@@ -534,7 +534,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
       el.addEventListener("mouseenter", () => {
         if (marker.getPopup()?.isOpen()) return;
-        tooltipPopup.setLngLat(ms.coordinates).addTo(map);
+        tooltipPopup.setLngLat(marker.getLngLat()).addTo(map);
       });
       el.addEventListener("mouseleave", () => {
         tooltipPopup.remove();
@@ -981,35 +981,37 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       return;
     }
 
-    if (spec.center) {
-      mapRef.current.flyTo({
-        center: spec.center,
-        zoom: spec.zoom ?? DEFAULT_ZOOM,
-        pitch: spec.pitch ?? 0,
-        bearing: spec.bearing ?? 0,
-      });
-      return;
-    }
-
-    // Auto-fit to markers when no explicit viewport is set
+    // Auto-fit to markers (takes priority over center+zoom)
     const markers = spec.markers ? Object.values(spec.markers) : [];
     if (markers.length > 0) {
       const lngs = markers.map((m) => m.coordinates[0]);
       const lats = markers.map((m) => m.coordinates[1]);
-      const bounds: [number, number, number, number] = [
-        Math.min(...lngs), Math.min(...lats),
-        Math.max(...lngs), Math.max(...lats),
-      ];
-      mapRef.current.fitBounds(bounds, {
-        padding: 80,
-        maxZoom: 14,
+      let west = Math.min(...lngs);
+      let south = Math.min(...lats);
+      let east = Math.max(...lngs);
+      let north = Math.max(...lats);
+      // Ensure a minimum span so fitBounds works with 1-2 close points
+      const MIN_SPAN = 0.01; // ~1km
+      if (east - west < MIN_SPAN) {
+        const midLng = (west + east) / 2;
+        west = midLng - MIN_SPAN / 2;
+        east = midLng + MIN_SPAN / 2;
+      }
+      if (north - south < MIN_SPAN) {
+        const midLat = (north + south) / 2;
+        south = midLat - MIN_SPAN / 2;
+        north = midLat + MIN_SPAN / 2;
+      }
+      mapRef.current.fitBounds([west, south, east, north], {
+        padding: { top: 100, bottom: 100, left: 100, right: 100 },
+        maxZoom: 15,
       });
       return;
     }
 
     mapRef.current.flyTo({
-      center: DEFAULT_CENTER,
-      zoom: DEFAULT_ZOOM,
+      center: spec.center ?? DEFAULT_CENTER,
+      zoom: spec.zoom ?? DEFAULT_ZOOM,
       pitch: spec.pitch ?? 0,
       bearing: spec.bearing ?? 0,
     });

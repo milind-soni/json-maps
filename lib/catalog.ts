@@ -242,8 +242,8 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
   {
     prompt: "Show me Tokyo at night with landmarks",
     output: `{"op":"replace","path":"/basemap","value":"dark"}
-{"op":"replace","path":"/center","value":[139.69,35.68]}
-{"op":"replace","path":"/zoom","value":12}
+{"op":"replace","path":"/center","value":[139.75,35.68]}
+{"op":"replace","path":"/zoom","value":11}
 {"op":"replace","path":"/pitch","value":45}
 {"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","icon":"tower-control","label":"Tokyo Tower","tooltip":"Observation tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
 {"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","label":"Shibuya Crossing","tooltip":"Iconic scramble crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World's busiest pedestrian crossing with up to 3,000 people per light change"}}}
