@@ -3,7 +3,6 @@
 A declarative JSON spec for interactive maps. Write JSON, get a map.
 
 Built on **MapLibre GL** (free, no API key) with **React** for widgets/overlays.
-Inspired by [json-render](https://github.com/AlfredPros/json-render) (spec → renderer pattern), [mapcn](https://github.com/milind-soni/mapcn) (MapLibre components), and [fusedmaps](https://github.com/milind-soni/fusedmaps) (data-driven geospatial viz).
 
 ---
 
@@ -50,7 +49,8 @@ The spec is a single JSON object. Every field is optional — an empty `{}` give
       "type": "vector" | "mvt" | "raster" | "pmtiles" | "hex",
       "name": "Display Name",
       "visible": true,
-      "data": "<geojson-url-or-inline>",
+      "data": "<url-or-inline>" | { "url": "<parquet/csv/json>", "sql": "SELECT ..." },
+      "filter": "property > value",
       "style": { ... },
       "tooltip": ["prop1", "prop2"]
     }
@@ -84,8 +84,8 @@ The spec is a single JSON object. Every field is optional — an empty `{}` give
 | MapLibre vs Mapbox | MapLibre | Free, no API key, same GL spec |
 | Basemaps | CARTO (positron, dark-matter, voyager) | Free, no token required |
 | Widget rendering | React components over map | Easier styling, theming, accessibility vs raw DOM |
-| Widget positioning | `"top-left" \| "top-right" \| "bottom-left" \| "bottom-right"` | Matches mapcn pattern, absolute positioning with Tailwind |
-| Color system | Adopt fusedmaps' continuous/categorical model | Proven, flexible, CartoColor palettes built in |
+| Widget positioning | `"top-left" \| "top-right" \| "bottom-left" \| "bottom-right"` | Absolute positioning with Tailwind |
+| Color system | Continuous/categorical model | Proven, flexible, CartoColor palettes built in |
 | Markers as map vs array | Named map (`{ "marker-1": {...} }`) | Consistent with layers, patchable |
 
 ---
@@ -123,7 +123,7 @@ The spec is a single JSON object. Every field is optional — an empty `{}` give
 - Style properties: `fillColor`, `lineColor`, `opacity`, `lineWidth`, `pointRadius`
 
 #### 2.2 Color System
-- Adopt fusedmaps' color model:
+- Color model:
   - **Continuous**: `{ type: "continuous", attr: "value", palette: "Viridis", domain: [0, 100] }`
   - **Categorical**: `{ type: "categorical", attr: "type", palette: "Bold" }`
   - Static: `"#ff0000"` or `[255, 0, 0]`
@@ -197,30 +197,118 @@ The spec is a single JSON object. Every field is optional — an empty `{}` give
 - Expand clusters on click
 - Uses MapLibre's native clustering
 
-### Phase 5 — Advanced (Future)
+### Phase 5 — Data Engine (DuckDB WASM)
 
-#### 5.1 Deck.gl Integration
+The performance layer. Instead of only fetching pre-built GeoJSON, json-maps can query data directly in the browser using DuckDB WASM.
+
+#### 5.1 DuckDB WASM Integration
+- Load `@duckdb/duckdb-wasm` lazily — only when a layer uses `data.sql` or `data.url` points to `.parquet`
+- Initialize a shared DuckDB instance per map (reuse across layers)
+- Query Parquet, CSV, JSON files directly via HTTP range requests — no full download needed
+- Output query results as GeoJSON FeatureCollections for MapLibre to render
+
+#### 5.2 SQL in the Spec
+- Layers can specify a `data` object with `url` + `sql`:
+  ```json
+  {
+    "data": {
+      "url": "https://example.com/buildings.parquet",
+      "sql": "SELECT *, ST_AsGeoJSON(ST_GeomFromWKB(geometry)) as geom FROM data WHERE height > 50"
+    }
+  }
+  ```
+- The `url` is registered as a DuckDB table, then `sql` runs against it
+- Spatial extensions (`spatial`) loaded for geometry operations
+- Multiple URLs can be joined in a single query
+- Falls back to plain URL fetch when no `sql` is provided (current behavior)
+
+#### 5.3 Filtering
+- `filter` field on layers for dynamic client-side filtering without re-fetching:
+  ```json
+  {
+    "layers": {
+      "buildings": {
+        "type": "vector",
+        "data": "buildings.parquet",
+        "filter": "height > 100 AND zone = 'commercial'"
+      }
+    }
+  }
+  ```
+- SQL-like filter expressions executed via DuckDB
+- Filters update reactively when the spec changes — re-query, re-render
+- For non-DuckDB layers (plain GeoJSON), filter evaluates against feature properties client-side
+
+#### 5.4 Performance Strategy
+- **Parquet + HTTP range requests** — only fetch the bytes needed, not the whole file
+- **Lazy loading** — DuckDB WASM bundle (~4MB) only loads when a layer needs it
+- **Shared instance** — one DuckDB instance shared across all layers in a map
+- **Web Workers** — DuckDB queries run off the main thread, keeping the map interactive
+- **Spatial indexing** — use DuckDB's spatial extension for bbox filtering before sending to MapLibre
+- **Streaming results** — for very large queries, stream results in batches to avoid memory spikes
+
+### Phase 6 — Events & Interactions
+
+#### 6.1 Event System
+- The map is fully observable — it broadcasts everything that happens:
+  - `onViewportChange` — map pans/zooms/rotates (returns center, zoom, bearing, pitch, bounds)
+  - `onFeatureClick` — user clicks a feature (returns feature properties + layer id)
+  - `onFeatureHover` — user hovers over a feature
+  - `onLayerLoad` — a layer finishes loading data
+  - `onMarkerClick` — user clicks a marker
+  - `onMapReady` — map is fully initialized
+  - `onFilterChange` — a layer filter updates
+  - `onError` — data fetch or query failure
+- Events exposed as React callbacks on the `<MapRenderer>` component
+- Also available as a vanilla JS event emitter for non-React usage
+- Enables json-maps to drive dashboards, sidebars, charts — the map broadcasts, other components react
+
+#### 6.2 AI-Ready Architecture
+- The event bus makes the map readable by AI agents — they can subscribe to events and understand what the user is seeing and doing
+- An AI agent watching `onViewportChange` knows what area the user is looking at, and can proactively load relevant data or provide context
+- `onFeatureClick` tells the agent which feature the user selected — the agent can explain it, compare it, or drill into it
+- Combined with the declarative spec, AI can both **read** (events) and **write** (spec updates) the map
+- This makes json-maps a two-way interface for AI: the agent generates a spec to show data, observes user interaction via events, and updates the spec in response
+- Example flow: agent generates map → user clicks a district → agent receives click event with properties → agent updates spec to zoom in and load detailed data for that district
+
+#### 6.2 Click Highlighting
+- Click a feature to highlight it
+- Outline/glow style on selected feature
+- `onClick` callback or event system
+- Selected feature state accessible via events
+
+#### 6.3 Cluster Layer
+- Point clustering for large datasets
+- Configurable radius and zoom thresholds
+- Expand clusters on click
+- Uses MapLibre's native clustering
+
+### Phase 7 — Advanced (Future)
+
+#### 7.1 Deck.gl Integration
 - MapLibre + Deck.gl overlay for advanced layer types
 - H3 Hex layer (via H3HexagonLayer)
 - Arc layer
 - Trip/animation layer
 - Only loaded when spec uses deck.gl layer types
 
-#### 5.2 Expressions & Dynamic Values
+#### 7.2 Expressions & Dynamic Values
 - Data-driven styling via expressions
 - Interpolate, match, step functions
 - Reference feature properties in style values
 
-#### 5.3 JSONL Streaming (AI Generation)
+#### 7.3 JSONL Streaming (AI Generation)
 - RFC 6902 JSON Patch format for streaming updates
 - Add/remove/replace operations on spec
-- System prompt generation from spec schema (like json-render's `generateSystemPrompt`)
+- System prompt generation from spec schema
 - Enables AI to generate maps incrementally
 
-#### 5.4 Animations
+#### 7.4 Animations
 - `flyTo` transitions between viewport states
-- Animated layer data updates
-- Time-series playback
+- Animated layer data updates (morphing geometries, moving points)
+- Time-series playback — step through temporal data with a slider
+- Configurable easing and duration on all viewport transitions
+- Layer entrance animations (fade in, grow from center)
 
 ---
 
@@ -232,6 +320,8 @@ json-maps/
 │   ├── spec.ts          # MapSpec type + basemap resolver
 │   ├── colors.ts        # Color system (continuous, categorical, palettes)
 │   ├── layers.ts        # Layer processing utilities
+│   ├── data-engine.ts   # DuckDB WASM init, query runner, Parquet/CSV loader
+│   ├── events.ts        # Event bus — click, hover, viewport change emitter
 │   └── utils.ts         # General utilities
 ├── components/
 │   ├── map-renderer.tsx  # Core: spec → MapLibre map
@@ -253,12 +343,16 @@ json-maps/
 ```
 MapSpec (JSON)
   → MapRenderer
+    → Data Engine (DuckDB WASM — query Parquet/CSV, run SQL, apply filters)
     → MapLibre GL map (basemap + viewport)
     → MapMarkers (markers from spec)
     → MapLayers (add sources + layers to map)
     → MapTooltip (hover overlay)
     → MapControls (positioned buttons)
     → Widgets (legend, layers, basemap, geocoder)
+    → Event Bus (broadcasts clicks, hovers, viewport changes)
+        → Parent app UI (dashboards, sidebars, charts)
+        → AI agents (read events, write spec updates)
 ```
 
 ### Widget Positioning
@@ -290,7 +384,7 @@ Specific components to build as reusable internals:
 
 ---
 
-## Color System (from fusedmaps)
+## Color System
 
 ### Continuous (numeric gradients)
 ```json
@@ -324,29 +418,18 @@ Sequential: Viridis, BluGrn, Sunset, SunsetDark, Mint, Emrld, Teal, BluYl, Peach
 Categorical: Bold, Pastel, Antique, Vivid, Prism, Safe, ...
 Diverging: TealRose, Geyser, Temps, Fall, ArmyRose, Tropic, ...
 
----
 
-## Differences from fusedmaps
-
-| Aspect | fusedmaps | json-maps |
-|--------|-----------|-----------|
-| Map engine | Mapbox GL + Deck.gl | MapLibre GL (free) |
-| API tokens | Requires Mapbox token | No token needed |
-| Basemaps | Mapbox styles | CARTO free styles |
-| Layers | Array of objects | Named map (object keys) |
-| Widgets | Raw DOM manipulation | React components |
-| Data loading | DuckDB/Parquet/SQL | Fetch URLs or inline GeoJSON |
-| Hex layer | Deck.gl H3HexagonLayer | Deferred to Phase 5 (Deck.gl integration) |
-| Messaging | PostMessage cross-frame sync | Not planned (React props/context instead) |
-| Highlight | Custom highlight system | MapLibre feature state |
 
 ---
 
 ## Next Steps
 
-1. **Viewport** — add `center`, `zoom`, `pitch`, `bearing` to spec + renderer
+1. ~~**Viewport**~~ ✅ — `center`, `zoom`, `pitch`, `bearing`, `bounds` in spec + renderer
 2. **Markers** — add marker map to spec + render with MapLibre Marker API
 3. **Vector layer** — GeoJSON data + basic style
 4. **Color system** — continuous + categorical with CartoColor palettes
 5. **Controls** — zoom, compass, scale bar as React overlays
 6. **Legend** — auto-generated from layer styles
+7. **DuckDB WASM** — Parquet queries, SQL in spec, client-side filtering
+8. **Events** — feature click/hover, viewport change, map ready broadcasts
+9. **Animations** — viewport transitions, layer entrance, time-series playback
