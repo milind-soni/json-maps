@@ -166,6 +166,52 @@ export default function MapPage() {
       }
     }
 
+    // Add GeoJSON layers
+    if (spec.layers) {
+      map.on("load", () => {
+        for (const [id, layer] of Object.entries(spec.layers)) {
+          if (layer.type !== "geojson") continue;
+          const s = layer.style || {};
+          const sourceId = "layer-" + id;
+
+          map.addSource(sourceId, { type: "geojson", data: layer.data });
+
+          map.addLayer({
+            id: sourceId + "-fill", type: "fill", source: sourceId,
+            filter: ["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]],
+            paint: { "fill-color": s.fillColor || "#3b82f6", "fill-opacity": s.opacity ?? 0.8 },
+          });
+          map.addLayer({
+            id: sourceId + "-line", type: "line", source: sourceId,
+            paint: { "line-color": s.lineColor || "#333333", "line-width": s.lineWidth ?? 1 },
+          });
+          map.addLayer({
+            id: sourceId + "-circle", type: "circle", source: sourceId,
+            filter: ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]],
+            paint: {
+              "circle-color": s.pointColor || s.fillColor || "#3b82f6",
+              "circle-radius": s.pointRadius ?? 5, "circle-opacity": s.opacity ?? 0.8,
+              "circle-stroke-width": 1, "circle-stroke-color": "#ffffff",
+            },
+          });
+
+          if (layer.tooltip && layer.tooltip.length > 0) {
+            const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, maxWidth: "280px" });
+            [sourceId + "-fill", sourceId + "-circle", sourceId + "-line"].forEach((sub) => {
+              map.on("mousemove", sub, (e) => {
+                if (!e.features?.length) return;
+                map.getCanvas().style.cursor = "pointer";
+                const props = e.features[0].properties || {};
+                const html = layer.tooltip.map((c) => props[c] != null ? "<b>" + c + ":</b> " + props[c] : "").filter(Boolean).join("<br>");
+                popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+              });
+              map.on("mouseleave", sub, () => { map.getCanvas().style.cursor = ""; popup.remove(); });
+            });
+          }
+        }
+      });
+    }
+
     return () => map.remove();
   }, []);
 

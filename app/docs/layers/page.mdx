@@ -1,19 +1,18 @@
+import { LiveExample } from "@/components/live-example"
+
 export const metadata = { title: "Layers" }
 
 # Layers
 
-> Layers are coming soon. This page describes the planned API.
+Layers render GeoJSON data on the map — points, lines, and polygons with static or data-driven styling.
 
-Layers render data on the map — polygons, lines, points, tiles, and more.
-
-## Planned Spec
+## Basic Usage
 
 ```json
 {
   "layers": {
     "buildings": {
-      "type": "vector",
-      "name": "Buildings",
+      "type": "geojson",
       "data": "https://example.com/buildings.geojson",
       "style": {
         "fillColor": "#3498db",
@@ -27,35 +26,163 @@ Layers render data on the map — polygons, lines, points, tiles, and more.
 }
 ```
 
-## Layer Types
+## Properties
 
-- **`vector`** — GeoJSON features (points, lines, polygons) from inline data or URL
-- **`mvt`** — Mapbox Vector Tiles from a tile URL template
-- **`raster`** — XYZ raster tiles or images
-- **`pmtiles`** — PMTiles archive from a `.pmtiles` URL
-- **`hex`** — H3 hexagons via Deck.gl (future)
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"geojson"` | Yes | Layer type |
+| `data` | `string \| object` | Yes | GeoJSON URL or inline GeoJSON object |
+| `style` | `LayerStyle` | No | Visual style for the layer |
+| `tooltip` | `string[]` | No | Feature property names to show on hover |
 
 ## Style Properties
 
-- **`fillColor`** — fill color (static, continuous, or categorical)
-- **`lineColor`** — stroke / outline color
-- **`opacity`** — layer opacity 0–1
-- **`lineWidth`** — stroke width in pixels
-- **`pointRadius`** — point radius in pixels
-- **`extruded`** — enable 3D extrusion
-- **`elevationAttr`** — property name for extrusion height
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `fillColor` | `ColorValue` | `"#3b82f6"` | Polygon fill color |
+| `pointColor` | `ColorValue` | (uses fillColor) | Point circle color |
+| `lineColor` | `ColorValue` | `"#333333"` | Line / polygon outline color |
+| `lineWidth` | `number` | `1` | Line width in pixels |
+| `pointRadius` | `number` | `5` | Point circle radius in pixels |
+| `opacity` | `number` | `0.8` | Overall opacity (0–1) |
 
-## Data-Driven Styling
+A `ColorValue` can be a static hex string or a data-driven mapping. See [Color System](/docs/colors) for details.
 
-Colors can be static or data-driven. See the [Color System](/docs/colors) page for details on continuous and categorical color mapping.
+## Geometry Handling
 
+A single GeoJSON source can contain mixed geometry types. The renderer automatically creates:
+
+- **Fill sublayer** for Polygon / MultiPolygon features
+- **Line sublayer** for all features (outlines + LineString)
+- **Circle sublayer** for Point / MultiPoint features
+
+You don't need to specify the geometry type — just provide the data and style properties relevant to your data.
+
+## Data Sources
+
+The `data` field accepts:
+
+**URL string** — fetched by the browser at render time:
+```json
+{
+  "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+}
+```
+
+**Inline GeoJSON object** — embedded directly in the spec:
+```json
+{
+  "data": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": { "type": "Point", "coordinates": [-73.98, 40.75] },
+        "properties": { "name": "NYC" }
+      }
+    ]
+  }
+}
+```
+
+## Data-Driven Color
+
+Color properties (`fillColor`, `pointColor`, `lineColor`) accept data-driven mappings for choropleth maps and heatmaps.
+
+**Continuous** — map a numeric property to a gradient:
 ```json
 {
   "fillColor": {
     "type": "continuous",
-    "attr": "temperature",
+    "attr": "population",
     "palette": "Sunset",
-    "domain": [0, 40]
+    "domain": [0, 1000000]
   }
 }
 ```
+
+**Categorical** — map a string property to discrete colors:
+```json
+{
+  "fillColor": {
+    "type": "categorical",
+    "attr": "zone_type",
+    "palette": "Bold",
+    "categories": ["residential", "commercial", "industrial"]
+  }
+}
+```
+
+## Tooltip
+
+The `tooltip` field is an array of property names from the GeoJSON features. On hover, a tooltip shows the values for those properties.
+
+```json
+{
+  "tooltip": ["place", "mag", "time"]
+}
+```
+
+## Examples
+
+### Earthquake Map
+
+Live USGS earthquake data with magnitude-based coloring — click **code** to see the spec:
+
+<LiveExample spec={{
+  basemap: "dark",
+  center: [-120, 37],
+  zoom: 3,
+  layers: {
+    quakes: {
+      type: "geojson",
+      data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      style: {
+        pointColor: {
+          type: "continuous",
+          attr: "mag",
+          palette: "OrYel",
+          domain: [0, 7],
+        },
+        pointRadius: 4,
+        opacity: 0.85,
+      },
+      tooltip: ["place", "mag", "time"],
+    },
+  },
+}} />
+
+### Choropleth
+
+```json
+{
+  "layers": {
+    "states": {
+      "type": "geojson",
+      "data": "https://example.com/us-states.geojson",
+      "style": {
+        "fillColor": {
+          "type": "continuous",
+          "attr": "density",
+          "palette": "Sunset",
+          "domain": [0, 1000]
+        },
+        "lineColor": "#ffffff",
+        "lineWidth": 1,
+        "opacity": 0.7
+      },
+      "tooltip": ["name", "density"]
+    }
+  }
+}
+```
+
+## Streaming Example
+
+When AI generates layers, the entire layer arrives as a single JSONL patch:
+
+```json
+{"op":"add","path":"/layers/quakes","value":{"type":"geojson","data":"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson","style":{"pointColor":{"type":"continuous","attr":"mag","palette":"OrYel","domain":[0,7]},"pointRadius":4,"opacity":0.85},"tooltip":["place","mag","time"]}}
+```
+
+The layer appears on the map as soon as the patch arrives.

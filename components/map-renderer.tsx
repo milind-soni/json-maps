@@ -7,11 +7,53 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import {
   type MapSpec,
   type MarkerSpec,
+  type LayerSpec,
+  type ColorValue,
   resolveBasemapStyle,
 } from "@/lib/spec";
+import { PALETTES } from "@/lib/palettes";
 
 const DEFAULT_CENTER: [number, number] = [0, 20];
 const DEFAULT_ZOOM = 1.5;
+
+/* ------------------------------------------------------------------ */
+/*  Color helpers                                                      */
+/* ------------------------------------------------------------------ */
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function colorValueToExpression(color: ColorValue): any {
+  if (typeof color === "string") return color;
+
+  const palette = PALETTES[color.palette];
+  if (!palette || palette.length === 0) return "#888888";
+
+  if (color.type === "continuous") {
+    const [min, max] = color.domain ?? [0, 1];
+    const steps = palette.length;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expr: any[] = ["interpolate", ["linear"], ["get", color.attr]];
+    for (let i = 0; i < steps; i++) {
+      expr.push(min + (max - min) * (i / (steps - 1)));
+      expr.push(palette[i]);
+    }
+    return expr;
+  }
+
+  if (color.type === "categorical") {
+    if (!color.categories || color.categories.length === 0)
+      return palette[0] ?? "#888888";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expr: any[] = ["match", ["get", color.attr]];
+    for (let i = 0; i < color.categories.length; i++) {
+      expr.push(color.categories[i]);
+      expr.push(palette[i % palette.length]);
+    }
+    expr.push(color.nullColor ?? "#cccccc");
+    return expr;
+  }
+
+  return "#888888";
+}
 
 /* ------------------------------------------------------------------ */
 /*  Portal content components                                          */
@@ -82,6 +124,32 @@ function TooltipContent({ text }: { text: string }) {
   );
 }
 
+interface LayerTooltipData {
+  properties: Record<string, unknown>;
+  columns: string[];
+}
+
+function LayerTooltipContent({ properties, columns }: LayerTooltipData) {
+  return (
+    <div className="rounded-md border border-border bg-popover text-popover-foreground shadow-md px-3 py-2 max-w-[280px]">
+      <div className="space-y-0.5">
+        {columns.map((col) => {
+          const value = properties[col];
+          if (value === undefined || value === null) return null;
+          return (
+            <div key={col} className="flex gap-2 text-xs leading-relaxed">
+              <span className="text-muted-foreground shrink-0">
+                {col}
+              </span>
+              <span className="font-medium truncate">{String(value)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /*  Internal types                                                     */
 /* ------------------------------------------------------------------ */
@@ -104,10 +172,19 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
   const portalsRef = useRef<Map<string, MarkerPortals>>(new Map());
   const [, setPortalVersion] = useState(0);
 
+  // Layer tracking
+  const layerSpecsRef = useRef<Record<string, string>>({});
+  const layerTooltipPopupRef = useRef<maplibregl.Popup | null>(null);
+  const layerTooltipContainerRef = useRef<HTMLDivElement | null>(null);
+  const [layerTooltip, setLayerTooltip] = useState<LayerTooltipData | null>(
+    null,
+  );
+
+  /* ---- Marker helpers ---- */
+
   function addMarker(map: maplibregl.Map, id: string, ms: MarkerSpec) {
     const color = ms.color || "#3b82f6";
 
-    // 16×16 anchor box — MapLibre uses this for positioning
     const el = document.createElement("div");
     el.style.cssText = "width:16px;height:16px;cursor:pointer;";
     el.dataset.color = color;
@@ -122,7 +199,6 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
     const portals: MarkerPortals = { markerEl: el };
 
-    // Click popup
     if (ms.popup) {
       const container = document.createElement("div");
       const popup = new maplibregl.Popup({
@@ -134,7 +210,6 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       portals.popupContainer = container;
     }
 
-    // Hover tooltip
     if (ms.tooltip) {
       const container = document.createElement("div");
       const tooltipPopup = new maplibregl.Popup({
@@ -145,7 +220,6 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       }).setDOMContent(container);
 
       el.addEventListener("mouseenter", () => {
-        // Don't show tooltip if popup is already open
         if (marker.getPopup()?.isOpen()) return;
         tooltipPopup.setLngLat(ms.coordinates).addTo(map);
       });
@@ -168,24 +242,138 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     portalsRef.current.delete(id);
   }
 
+  /* ---- Layer helpers ---- */
+
+  function addGeoJsonLayer(
+    map: maplibregl.Map,
+    id: string,
+    layer: LayerSpec,
+  ) {
+    const sourceId = `jm-${id}`;
+    const style = layer.style ?? {};
+    const opacity = style.opacity ?? 0.8;
+
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: layer.data as string | GeoJSON.GeoJSON,
+    });
+
+    // Fill layer (polygons)
+    const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
+    map.addLayer({
+      id: `${sourceId}-fill`,
+      type: "fill",
+      source: sourceId,
+      filter: [
+        "any",
+        ["==", ["geometry-type"], "Polygon"],
+        ["==", ["geometry-type"], "MultiPolygon"],
+      ],
+      paint: {
+        "fill-color": fillColor,
+        "fill-opacity": opacity,
+      },
+    });
+
+    // Line layer (lines + polygon outlines)
+    const lineColor = colorValueToExpression(style.lineColor ?? "#333333");
+    map.addLayer({
+      id: `${sourceId}-line`,
+      type: "line",
+      source: sourceId,
+      paint: {
+        "line-color": lineColor,
+        "line-width": style.lineWidth ?? 1,
+        "line-opacity": Math.min(opacity + 0.1, 1),
+      },
+    });
+
+    // Circle layer (points)
+    const pointColor = colorValueToExpression(
+      style.pointColor ?? style.fillColor ?? "#3b82f6",
+    );
+    map.addLayer({
+      id: `${sourceId}-circle`,
+      type: "circle",
+      source: sourceId,
+      filter: [
+        "any",
+        ["==", ["geometry-type"], "Point"],
+        ["==", ["geometry-type"], "MultiPoint"],
+      ],
+      paint: {
+        "circle-color": pointColor,
+        "circle-radius": style.pointRadius ?? 5,
+        "circle-opacity": opacity,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+
+    // Hover tooltip
+    if (layer.tooltip && layer.tooltip.length > 0) {
+      const columns = layer.tooltip;
+      const subLayers = [
+        `${sourceId}-fill`,
+        `${sourceId}-circle`,
+        `${sourceId}-line`,
+      ];
+
+      for (const subLayer of subLayers) {
+        map.on("mousemove", subLayer, (e) => {
+          if (!e.features || e.features.length === 0) return;
+          const props = (e.features[0].properties ?? {}) as Record<
+            string,
+            unknown
+          >;
+          map.getCanvas().style.cursor = "pointer";
+          setLayerTooltip({ properties: props, columns });
+
+          const popup = layerTooltipPopupRef.current;
+          if (popup) {
+            popup.setLngLat(e.lngLat).addTo(map);
+          }
+        });
+
+        map.on("mouseleave", subLayer, () => {
+          map.getCanvas().style.cursor = "";
+          setLayerTooltip(null);
+          layerTooltipPopupRef.current?.remove();
+        });
+      }
+    }
+  }
+
+  function removeGeoJsonLayer(map: maplibregl.Map, id: string) {
+    const sourceId = `jm-${id}`;
+    const subLayers = [
+      `${sourceId}-circle`,
+      `${sourceId}-line`,
+      `${sourceId}-fill`,
+    ];
+    for (const layerId of subLayers) {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+    }
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+  }
+
+  /* ---- Sync functions ---- */
+
   const syncMarkers = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const specMarkers = spec.markers ?? {};
 
-    // Remove markers no longer in spec
     for (const id of [...markersRef.current.keys()]) {
       if (!specMarkers[id]) removeMarker(id);
     }
 
-    // Add or update
     for (const [id, ms] of Object.entries(specMarkers)) {
       const existing = markersRef.current.get(id);
 
       if (existing) {
         existing.setLngLat(ms.coordinates);
-        // Recreate if color changed
         if (existing.getElement().dataset.color !== (ms.color ?? "")) {
           removeMarker(id);
           addMarker(map, id, ms);
@@ -198,6 +386,46 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     setPortalVersion((v) => v + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spec.markers]);
+
+  const syncLayers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    const specLayers = spec.layers ?? {};
+    const prevSpecs = layerSpecsRef.current;
+
+    // Remove layers no longer in spec
+    for (const id of Object.keys(prevSpecs)) {
+      if (!specLayers[id]) {
+        removeGeoJsonLayer(map, id);
+        delete prevSpecs[id];
+      }
+    }
+
+    // Add or update layers
+    for (const [id, layerSpec] of Object.entries(specLayers)) {
+      const serialized = JSON.stringify(layerSpec);
+      const sourceExists = !!map.getSource(`jm-${id}`);
+
+      if (prevSpecs[id] === serialized && sourceExists) continue;
+
+      if (sourceExists) {
+        removeGeoJsonLayer(map, id);
+      }
+
+      addGeoJsonLayer(map, id, layerSpec);
+      prevSpecs[id] = serialized;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spec.layers]);
+
+  // Refs so basemap effect can call latest sync without re-triggering setStyle
+  const syncMarkersRef = useRef(syncMarkers);
+  const syncLayersRef = useRef(syncLayers);
+  useEffect(() => { syncMarkersRef.current = syncMarkers; }, [syncMarkers]);
+  useEffect(() => { syncLayersRef.current = syncLayers; }, [syncLayers]);
+
+  /* ---- Effects ---- */
 
   // Create map once
   useEffect(() => {
@@ -213,14 +441,28 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       attributionControl: false,
     });
 
-    if (spec.bounds) {
-      map.on("load", () => {
+    // Sync layers after initial style load (addSource/addLayer need style ready)
+    map.on("load", () => {
+      if (spec.bounds) {
         map.fitBounds(spec.bounds as [number, number, number, number], {
           padding: 40,
           duration: 0,
         });
-      });
-    }
+      }
+      syncLayersRef.current();
+    });
+
+    // Create layer tooltip popup (reused for all layers)
+    const tooltipContainer = document.createElement("div");
+    const tooltipPopup = new maplibregl.Popup({
+      offset: 12,
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: "none",
+    }).setDOMContent(tooltipContainer);
+
+    layerTooltipContainerRef.current = tooltipContainer;
+    layerTooltipPopupRef.current = tooltipPopup;
 
     mapRef.current = map;
 
@@ -228,22 +470,29 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       for (const id of markersRef.current.keys()) removeMarker(id);
       markersRef.current.clear();
       portalsRef.current.clear();
+      tooltipPopup.remove();
+      layerTooltipPopupRef.current = null;
+      layerTooltipContainerRef.current = null;
+      layerSpecsRef.current = {};
       map.remove();
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update basemap
+  // Update basemap — only when basemap actually changes (uses refs for sync callbacks)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const style = resolveBasemapStyle(spec.basemap);
     if (style) {
       map.setStyle(style);
-      map.once("styledata", () => syncMarkers());
+      map.once("styledata", () => {
+        syncMarkersRef.current();
+        syncLayersRef.current();
+      });
     }
-  }, [spec.basemap, syncMarkers]);
+  }, [spec.basemap]);
 
   // Update viewport
   useEffect(() => {
@@ -270,6 +519,11 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     syncMarkers();
   }, [syncMarkers]);
 
+  // Sync layers (skips if style not loaded — initial sync handled by map.on("load"))
+  useEffect(() => {
+    syncLayers();
+  }, [syncLayers]);
+
   /* ---- Render portals ---- */
 
   const entries = Array.from(portalsRef.current.entries());
@@ -277,6 +531,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
   return (
     <>
       <div ref={containerRef} className="w-full h-full" />
+      {/* Marker portals */}
       {entries.map(([id, p]) => {
         const ms = spec.markers?.[id];
         if (!ms) return null;
@@ -301,6 +556,16 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
           </Fragment>
         );
       })}
+      {/* Layer tooltip portal */}
+      {layerTooltipContainerRef.current &&
+        layerTooltip &&
+        createPortal(
+          <LayerTooltipContent
+            properties={layerTooltip.properties}
+            columns={layerTooltip.columns}
+          />,
+          layerTooltipContainerRef.current,
+        )}
     </>
   );
 }

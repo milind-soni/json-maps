@@ -132,7 +132,7 @@ const SIMULATION_STAGES: SimulationStage[] = [
 ];
 
 const EXAMPLE_PROMPTS = [
-  "Show San Francisco streets",
+  "Show recent earthquakes worldwide",
   "Fly to Paris with a tilted view",
   "Dark map of New York zoomed in",
   "Show Mumbai from above",

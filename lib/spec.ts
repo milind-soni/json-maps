@@ -13,6 +13,48 @@ export interface MarkerSpec {
   draggable?: boolean;
 }
 
+/* ---- Color system ---- */
+
+export interface ContinuousColor {
+  type: "continuous";
+  attr: string;
+  palette: string;
+  domain?: [number, number];
+  nullColor?: string;
+}
+
+export interface CategoricalColor {
+  type: "categorical";
+  attr: string;
+  palette: string;
+  categories?: string[];
+  nullColor?: string;
+}
+
+export type ColorValue = string | ContinuousColor | CategoricalColor;
+
+/* ---- Layer system ---- */
+
+export interface LayerStyle {
+  fillColor?: ColorValue;
+  pointColor?: ColorValue;
+  lineColor?: ColorValue;
+  lineWidth?: number;
+  pointRadius?: number;
+  opacity?: number;
+}
+
+export interface GeoJsonLayerSpec {
+  type: "geojson";
+  data: string | Record<string, unknown>;
+  style?: LayerStyle;
+  tooltip?: string[];
+}
+
+export type LayerSpec = GeoJsonLayerSpec;
+
+/* ---- Map spec ---- */
+
 export interface MapSpec {
   basemap?: "light" | "dark" | "streets" | (string & {});
   center?: [number, number];
@@ -21,6 +63,7 @@ export interface MapSpec {
   bearing?: number;
   bounds?: [number, number, number, number];
   markers?: Record<string, MarkerSpec>;
+  layers?: Record<string, LayerSpec>;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {
