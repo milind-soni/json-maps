@@ -7,16 +7,16 @@ const vercelDarkTheme = {
   type: "dark" as const,
   colors: {
     "editor.background": "transparent",
-    "editor.foreground": "#EDEDED",
+    "editor.foreground": "#e6edf3",
   },
   settings: [
     {
       scope: ["comment", "punctuation.definition.comment"],
-      settings: { foreground: "#666666" },
+      settings: { foreground: "#8b949e" },
     },
     {
       scope: ["string", "string.quoted", "string.template"],
-      settings: { foreground: "#50E3C2" },
+      settings: { foreground: "#a5d6ff" },
     },
     {
       scope: [
@@ -24,31 +24,31 @@ const vercelDarkTheme = {
         "constant.language.boolean",
         "constant.language.null",
       ],
-      settings: { foreground: "#50E3C2" },
+      settings: { foreground: "#79c0ff" },
     },
     {
       scope: ["keyword", "storage.type", "storage.modifier"],
-      settings: { foreground: "#FF0080" },
+      settings: { foreground: "#ff7b72" },
     },
     {
       scope: ["keyword.operator", "keyword.control"],
-      settings: { foreground: "#FF0080" },
+      settings: { foreground: "#ff7b72" },
     },
     {
       scope: ["entity.name.function", "support.function", "meta.function-call"],
-      settings: { foreground: "#7928CA" },
+      settings: { foreground: "#d2a8ff" },
     },
     {
       scope: ["variable", "variable.other", "variable.parameter"],
-      settings: { foreground: "#EDEDED" },
+      settings: { foreground: "#e6edf3" },
     },
     {
       scope: ["entity.name.tag", "support.class.component", "entity.name.type"],
-      settings: { foreground: "#FF0080" },
+      settings: { foreground: "#7ee787" },
     },
     {
       scope: ["punctuation", "meta.brace", "meta.bracket"],
-      settings: { foreground: "#888888" },
+      settings: { foreground: "#8b949e" },
     },
     {
       scope: [
@@ -56,15 +56,15 @@ const vercelDarkTheme = {
         "entity.name.tag.json",
         "meta.object-literal.key",
       ],
-      settings: { foreground: "#EDEDED" },
+      settings: { foreground: "#79c0ff" },
     },
     {
       scope: ["entity.other.attribute-name"],
-      settings: { foreground: "#50E3C2" },
+      settings: { foreground: "#79c0ff" },
     },
     {
       scope: ["support.type.primitive", "entity.name.type.primitive"],
-      settings: { foreground: "#50E3C2" },
+      settings: { foreground: "#79c0ff" },
     },
   ],
 };
@@ -74,16 +74,16 @@ const vercelLightTheme = {
   type: "light" as const,
   colors: {
     "editor.background": "transparent",
-    "editor.foreground": "#171717",
+    "editor.foreground": "#1f2328",
   },
   settings: [
     {
       scope: ["comment", "punctuation.definition.comment"],
-      settings: { foreground: "#6b7280" },
+      settings: { foreground: "#6e7781" },
     },
     {
       scope: ["string", "string.quoted", "string.template"],
-      settings: { foreground: "#067a6e" },
+      settings: { foreground: "#0a3069" },
     },
     {
       scope: [
@@ -91,31 +91,31 @@ const vercelLightTheme = {
         "constant.language.boolean",
         "constant.language.null",
       ],
-      settings: { foreground: "#067a6e" },
+      settings: { foreground: "#0550ae" },
     },
     {
       scope: ["keyword", "storage.type", "storage.modifier"],
-      settings: { foreground: "#d6409f" },
+      settings: { foreground: "#cf222e" },
     },
     {
       scope: ["keyword.operator", "keyword.control"],
-      settings: { foreground: "#d6409f" },
+      settings: { foreground: "#cf222e" },
     },
     {
       scope: ["entity.name.function", "support.function", "meta.function-call"],
-      settings: { foreground: "#6e56cf" },
+      settings: { foreground: "#8250df" },
     },
     {
       scope: ["variable", "variable.other", "variable.parameter"],
-      settings: { foreground: "#171717" },
+      settings: { foreground: "#1f2328" },
     },
     {
       scope: ["entity.name.tag", "support.class.component", "entity.name.type"],
-      settings: { foreground: "#d6409f" },
+      settings: { foreground: "#116329" },
     },
     {
       scope: ["punctuation", "meta.brace", "meta.bracket"],
-      settings: { foreground: "#6b7280" },
+      settings: { foreground: "#6e7781" },
     },
     {
       scope: [
@@ -123,15 +123,15 @@ const vercelLightTheme = {
         "entity.name.tag.json",
         "meta.object-literal.key",
       ],
-      settings: { foreground: "#171717" },
+      settings: { foreground: "#0550ae" },
     },
     {
       scope: ["entity.other.attribute-name"],
-      settings: { foreground: "#067a6e" },
+      settings: { foreground: "#0550ae" },
     },
     {
       scope: ["support.type.primitive", "entity.name.type.primitive"],
-      settings: { foreground: "#067a6e" },
+      settings: { foreground: "#0550ae" },
     },
   ],
 };

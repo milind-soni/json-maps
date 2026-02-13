@@ -185,6 +185,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
   const [, setPortalVersion] = useState(0);
 
   // Layer tracking
+  const pendingLayerSyncRef = useRef(false);
   const layerSpecsRef = useRef<Record<string, string>>({});
   const layerTooltipPopupRef = useRef<maplibregl.Popup | null>(null);
   const layerTooltipContainerRef = useRef<HTMLDivElement | null>(null);
@@ -401,7 +402,27 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
   const syncLayers = useCallback(() => {
     const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+    if (!map) return;
+
+    if (!map.isStyleLoaded()) {
+      // Style not ready — poll via rAF until it is (one loop at a time)
+      if (!pendingLayerSyncRef.current) {
+        pendingLayerSyncRef.current = true;
+        const check = () => {
+          if (!mapRef.current || !pendingLayerSyncRef.current) return;
+          if (mapRef.current.isStyleLoaded()) {
+            pendingLayerSyncRef.current = false;
+            syncLayersRef.current();
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      }
+      return;
+    }
+
+    pendingLayerSyncRef.current = false;
 
     const specLayers = spec.layers ?? {};
     const prevSpecs = layerSpecsRef.current;
@@ -537,7 +558,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     syncMarkers();
   }, [syncMarkers]);
 
-  // Sync layers (skips if style not loaded — initial sync handled by map.on("load"))
+  // Sync layers (syncLayers internally polls if style isn't ready yet)
   useEffect(() => {
     syncLayers();
   }, [syncLayers]);
