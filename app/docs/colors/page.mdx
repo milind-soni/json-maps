@@ -29,14 +29,12 @@ Map a numeric property to a color gradient using a palette.
 }
 ```
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `type` | `"continuous"` | Yes | Identifies this as continuous |
-| `attr` | `string` | Yes | Feature property name |
-| `palette` | `string` | Yes | CartoColor palette name |
-| `domain` | `[min, max]` | No | Value range (auto-detected if omitted) |
-| `steps` | `number` | No | Color steps 2–12 (default: 7) |
-| `nullColor` | `string` | No | Color for null/missing values |
+- **`type`** — `"continuous"` (required)
+- **`attr`** — feature property name (required)
+- **`palette`** — CartoColor palette name (required)
+- **`domain`** — `[min, max]` value range, auto-detected if omitted
+- **`steps`** — color steps 2–12 (default: 7)
+- **`nullColor`** — color for null/missing values
 
 ## Categorical
 
@@ -51,13 +49,11 @@ Map a string property to discrete colors.
 }
 ```
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `type` | `"categorical"` | Yes | Identifies this as categorical |
-| `attr` | `string` | Yes | Feature property name |
-| `palette` | `string` | No | CartoColor palette name |
-| `categories` | `string[]` | No | Explicit category list |
-| `nullColor` | `string` | No | Color for null/missing values |
+- **`type`** — `"categorical"` (required)
+- **`attr`** — feature property name (required)
+- **`palette`** — CartoColor palette name
+- **`categories`** — explicit category list
+- **`nullColor`** — color for null/missing values
 
 ## Palettes
 

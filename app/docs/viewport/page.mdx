@@ -6,13 +6,11 @@ The viewport controls the camera position — where the map is looking and from 
 
 ## Properties
 
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `center` | `[lng, lat]` | `[0, 20]` | Map center as longitude, latitude |
-| `zoom` | `number` | `1.5` | Zoom level (0–24) |
-| `pitch` | `number` | `0` | Camera tilt in degrees (0–85) |
-| `bearing` | `number` | `0` | Camera rotation in degrees (-180–180, 0 = north) |
-| `bounds` | `[w, s, e, n]` | — | Fit map to bounding box (overrides center/zoom) |
+- **`center`** — `[lng, lat]` — map center as longitude, latitude (default: `[0, 20]`)
+- **`zoom`** — `number` — zoom level 0–24 (default: `1.5`)
+- **`pitch`** — `number` — camera tilt in degrees 0–85 (default: `0`)
+- **`bearing`** — `number` — camera rotation in degrees -180–180, 0 = north (default: `0`)
+- **`bounds`** — `[west, south, east, north]` — fit map to bounding box (overrides center/zoom)
 
 ## Center and Zoom
 

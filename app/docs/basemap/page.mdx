@@ -6,15 +6,15 @@ The `basemap` field controls the map's background style. It accepts a preset nam
 
 ## Presets
 
+Three built-in basemaps are available, all served free by CARTO (no API key needed):
+
+- **`light`** — clean, minimal light theme (CARTO Positron)
+- **`dark`** — dark background with light labels (CARTO Dark Matter)
+- **`streets`** — colorful with road detail (CARTO Voyager)
+
 ```json
 { "basemap": "light" }
 ```
-
-| Preset | Style | Source |
-|--------|-------|--------|
-| `light` | Clean, minimal light theme | CARTO Positron |
-| `dark` | Dark background, light labels | CARTO Dark Matter |
-| `streets` | Colorful with road detail | CARTO Voyager |
 
 If `basemap` is omitted, it defaults to `light`.
 
