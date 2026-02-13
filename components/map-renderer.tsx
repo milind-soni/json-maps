@@ -8,8 +8,13 @@ import {
   type MapSpec,
   type MarkerSpec,
   type LayerSpec,
+  type GeoJsonLayerSpec,
+  type RouteLayerSpec,
   type ControlsSpec,
+  type LegendSpec,
   type ColorValue,
+  type ContinuousColor,
+  type CategoricalColor,
   type SizeValue,
   resolveBasemapStyle,
 } from "@/lib/spec";
@@ -337,6 +342,100 @@ function MapControls({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Legend                                                              */
+/* ------------------------------------------------------------------ */
+
+function MapLegend({
+  legendSpec,
+  layerSpec,
+}: {
+  legendSpec: LegendSpec;
+  layerSpec: GeoJsonLayerSpec | null;
+}) {
+  if (!layerSpec || !layerSpec.style) return null;
+
+  const position = legendSpec.position ?? "bottom-left";
+  const posClass = POSITION_CLASSES[position] ?? POSITION_CLASSES["bottom-left"];
+  const title = legendSpec.title ?? legendSpec.layer;
+  const style = layerSpec.style;
+
+  // Find the first data-driven color for the legend
+  const colorDef = (style.pointColor ?? style.fillColor ?? style.lineColor) as
+    | ContinuousColor
+    | CategoricalColor
+    | string
+    | undefined;
+
+  if (!colorDef || typeof colorDef === "string") return null;
+
+  const palette = PALETTES[colorDef.palette];
+  if (!palette || palette.length === 0) return null;
+
+  return (
+    <div className={`absolute ${posClass} z-10`}>
+      <div className="rounded-md border border-gray-200 bg-white/95 backdrop-blur-sm shadow-md px-3 py-2 text-xs">
+        <div className="font-semibold text-gray-800 mb-1.5">{title}</div>
+        {colorDef.type === "continuous" && (
+          <ContinuousLegend colorDef={colorDef} palette={palette} />
+        )}
+        {colorDef.type === "categorical" && (
+          <CategoricalLegend colorDef={colorDef} palette={palette} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ContinuousLegend({
+  colorDef,
+  palette,
+}: {
+  colorDef: ContinuousColor;
+  palette: string[];
+}) {
+  const [min, max] = colorDef.domain ?? [0, 1];
+  const gradient = `linear-gradient(to right, ${palette.join(", ")})`;
+
+  return (
+    <div>
+      <div
+        className="h-2.5 w-36 rounded-sm"
+        style={{ background: gradient }}
+      />
+      <div className="flex justify-between mt-0.5 text-[10px] text-gray-500">
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
+    </div>
+  );
+}
+
+function CategoricalLegend({
+  colorDef,
+  palette,
+}: {
+  colorDef: CategoricalColor;
+  palette: string[];
+}) {
+  const categories = colorDef.categories ?? [];
+  if (categories.length === 0) return null;
+
+  return (
+    <div className="space-y-0.5">
+      {categories.map((cat, i) => (
+        <div key={cat} className="flex items-center gap-1.5">
+          <div
+            className="w-2.5 h-2.5 rounded-sm shrink-0"
+            style={{ background: palette[i % palette.length] }}
+          />
+          <span className="text-gray-600 truncate">{cat}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Internal types                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -436,18 +535,28 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
   function addGeoJsonLayer(
     map: maplibregl.Map,
     id: string,
-    layer: LayerSpec,
+    layer: GeoJsonLayerSpec,
   ) {
     const sourceId = `jm-${id}`;
 
     try {
       const style = layer.style ?? {};
       const opacity = style.opacity ?? 0.8;
+      const isClustered = layer.cluster === true;
+      const clOpts = layer.clusterOptions ?? {};
 
-      map.addSource(sourceId, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sourceOpts: any = {
         type: "geojson",
         data: layer.data as string | GeoJSON.GeoJSON,
-      });
+      };
+      if (isClustered) {
+        sourceOpts.cluster = true;
+        sourceOpts.clusterRadius = clOpts.radius ?? 50;
+        sourceOpts.clusterMaxZoom = clOpts.maxZoom ?? 14;
+        sourceOpts.clusterMinPoints = clOpts.minPoints ?? 2;
+      }
+      map.addSource(sourceId, sourceOpts);
 
       // Fill layer (polygons)
       const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
@@ -479,19 +588,19 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
         },
       });
 
-      // Circle layer (points)
+      // Circle layer (points) — for non-clustered, or unclustered points in clustered mode
       const pointColor = colorValueToExpression(
         style.pointColor ?? style.fillColor ?? "#3b82f6",
       );
+      const circleFilter = isClustered
+        ? ["all", ["!", ["has", "point_count"]], ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]]]
+        : ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]];
       map.addLayer({
         id: `${sourceId}-circle`,
         type: "circle",
         source: sourceId,
-        filter: [
-          "any",
-          ["==", ["geometry-type"], "Point"],
-          ["==", ["geometry-type"], "MultiPoint"],
-        ],
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        filter: circleFilter as any,
         paint: {
           "circle-color": pointColor,
           "circle-radius": sizeValueToExpression(style.pointRadius ?? 5, 5),
@@ -500,6 +609,55 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
           "circle-stroke-color": lineColor,
         },
       });
+
+      // Cluster layers
+      if (isClustered) {
+        const colors = clOpts.colors ?? ["#22c55e", "#eab308", "#ef4444"];
+        map.addLayer({
+          id: `${sourceId}-cluster`,
+          type: "circle",
+          source: sourceId,
+          filter: ["has", "point_count"],
+          paint: {
+            "circle-color": ["step", ["get", "point_count"], colors[0], 100, colors[1], 750, colors[2]],
+            "circle-radius": ["step", ["get", "point_count"], 20, 100, 30, 750, 40],
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#fff",
+            "circle-opacity": 0.85,
+          },
+        });
+        map.addLayer({
+          id: `${sourceId}-cluster-count`,
+          type: "symbol",
+          source: sourceId,
+          filter: ["has", "point_count"],
+          layout: {
+            "text-field": "{point_count_abbreviated}",
+            "text-size": 12,
+          },
+          paint: { "text-color": "#fff" },
+        });
+
+        // Click cluster to zoom in
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const onClusterClick = async (e: any) => {
+          const features = map.queryRenderedFeatures(e.point, { layers: [`${sourceId}-cluster`] });
+          if (!features.length) return;
+          const clusterId = features[0].properties?.cluster_id as number;
+          const source = map.getSource(sourceId) as maplibregl.GeoJSONSource;
+          const zoom = await source.getClusterExpansionZoom(clusterId);
+          map.easeTo({ center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number], zoom });
+        };
+        map.on("click", `${sourceId}-cluster`, onClusterClick);
+        map.on("mouseenter", `${sourceId}-cluster`, () => { map.getCanvas().style.cursor = "pointer"; });
+        map.on("mouseleave", `${sourceId}-cluster`, () => { map.getCanvas().style.cursor = ""; });
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const clusterHandlers: Array<{ event: string; layer: string; handler: any }> = [
+          { event: "click", layer: `${sourceId}-cluster`, handler: onClusterClick },
+        ];
+        layerHandlersRef.current[`${sourceId}-cluster`] = clusterHandlers;
+      }
 
       // Hover tooltip
       if (layer.tooltip && layer.tooltip.length > 0) {
@@ -544,25 +702,70 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       }
     } catch (err) {
       console.warn(`[json-maps] Failed to add layer "${id}":`, err);
-      // Clean up partial state if source was added but layers failed
-      try { removeGeoJsonLayer(map, id); } catch { /* ignore */ }
+      try { removeLayer(map, id); } catch { /* ignore */ }
     }
   }
 
-  function removeGeoJsonLayer(map: maplibregl.Map, id: string) {
+  function addRouteLayer(
+    map: maplibregl.Map,
+    id: string,
+    layer: RouteLayerSpec,
+  ) {
     const sourceId = `jm-${id}`;
 
-    // Remove event listeners first
-    const handlers = layerHandlersRef.current[sourceId];
-    if (handlers) {
-      for (const h of handlers) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (map as any).off(h.event, h.layer, h.handler);
+    try {
+      const style = layer.style ?? {};
+
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "LineString", coordinates: layer.coordinates },
+        },
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const paint: any = {
+        "line-color": style.color ?? "#3b82f6",
+        "line-width": style.width ?? 3,
+        "line-opacity": style.opacity ?? 0.8,
+      };
+      if (style.dashed) {
+        paint["line-dasharray"] = [6, 3];
       }
-      delete layerHandlersRef.current[sourceId];
+
+      map.addLayer({
+        id: `${sourceId}-line`,
+        type: "line",
+        source: sourceId,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint,
+      });
+    } catch (err) {
+      console.warn(`[json-maps] Failed to add route "${id}":`, err);
+      try { removeLayer(map, id); } catch { /* ignore */ }
+    }
+  }
+
+  function removeLayer(map: maplibregl.Map, id: string) {
+    const sourceId = `jm-${id}`;
+
+    // Remove event listeners
+    for (const key of [sourceId, `${sourceId}-cluster`]) {
+      const handlers = layerHandlersRef.current[key];
+      if (handlers) {
+        for (const h of handlers) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (map as any).off(h.event, h.layer, h.handler);
+        }
+        delete layerHandlersRef.current[key];
+      }
     }
 
     const subLayers = [
+      `${sourceId}-cluster-count`,
+      `${sourceId}-cluster`,
       `${sourceId}-circle`,
       `${sourceId}-line`,
       `${sourceId}-fill`,
@@ -633,7 +836,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     // Remove layers no longer in spec
     for (const id of Object.keys(prevSpecs)) {
       if (!specLayers[id]) {
-        removeGeoJsonLayer(map, id);
+        removeLayer(map, id);
         delete prevSpecs[id];
       }
     }
@@ -646,10 +849,14 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       if (prevSpecs[id] === serialized && sourceExists) continue;
 
       if (sourceExists) {
-        removeGeoJsonLayer(map, id);
+        removeLayer(map, id);
       }
 
-      addGeoJsonLayer(map, id, layerSpec);
+      if (layerSpec.type === "route") {
+        addRouteLayer(map, id, layerSpec);
+      } else {
+        addGeoJsonLayer(map, id, layerSpec);
+      }
       prevSpecs[id] = serialized;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -780,6 +987,14 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
             containerRef={containerRef}
           />
         )}
+        {spec.legend &&
+          Object.entries(spec.legend).map(([id, leg]) => {
+            const layer = spec.layers?.[leg.layer];
+            const geoLayer = layer && layer.type === "geojson" ? layer : null;
+            return (
+              <MapLegend key={id} legendSpec={leg} layerSpec={geoLayer} />
+            );
+          })}
       </div>
       {/* Marker portals */}
       {entries.map(([id, p]) => {

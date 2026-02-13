@@ -54,18 +54,34 @@ const LAYER_STYLE_FIELDS: Record<string, FieldDef> = {
 };
 
 const LAYER_FIELDS: Record<string, FieldDef> = {
-  type: { description: '"geojson" (required)' },
+  type: { description: '"geojson" or "route" (required)' },
   data: {
     description:
-      "URL string to a GeoJSON file OR inline GeoJSON object (required)",
+      '(geojson only) URL string to a GeoJSON file OR inline GeoJSON object',
+  },
+  coordinates: {
+    description:
+      '(route only) array of [longitude, latitude] pairs defining the line path',
   },
   style: {
-    description: "styling options",
+    description: "styling options (geojson: full LayerStyle, route: color/width/opacity/dashed)",
     children: LAYER_STYLE_FIELDS,
   },
   tooltip: {
     description:
-      'array of property names to show on hover, e.g. ["name", "population"]',
+      '(geojson only) array of property names to show on hover, e.g. ["name", "population"]',
+  },
+  cluster: {
+    description: "(geojson only) boolean — enable point clustering (default false)",
+  },
+  clusterOptions: {
+    description: "(geojson only) clustering configuration",
+    children: {
+      radius: { description: "cluster radius in pixels (default 50)" },
+      maxZoom: { description: "max zoom to cluster at (default 14)" },
+      minPoints: { description: "minimum points per cluster (default 2)" },
+      colors: { description: '3-color array for small/medium/large clusters (default ["#22c55e","#eab308","#ef4444"])' },
+    },
   },
 };
 
@@ -89,8 +105,19 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
     children: MARKER_FIELDS,
   },
   layers: {
-    description: "named map of GeoJSON layers, each with:",
+    description: "named map of layers (geojson or route), each with:",
     children: LAYER_FIELDS,
+  },
+  legend: {
+    description: "named map of legend overlays, each with:",
+    children: {
+      layer: { description: "ID of the layer to derive legend from (required)" },
+      title: { description: "legend title (defaults to layer ID)" },
+      position: {
+        description:
+          '"top-left" | "top-right" | "bottom-left" | "bottom-right" (default "bottom-left")',
+      },
+    },
   },
   controls: {
     description: "map UI controls overlay",
@@ -187,6 +214,9 @@ const BASE_RULES = [
   "When adding layers with data-driven color, always include the domain range for continuous palettes.",
   "Include tooltip arrays for layers so users can inspect features on hover.",
   'When adding controls, use "/controls" path. Default shows zoom + compass at top-right. Only add controls when user requests interactive UI elements.',
+  'For routes, use type "route" with a coordinates array of [lng, lat] pairs and optional style (color, width, opacity, dashed).',
+  "When the user asks for clustering, set cluster: true on the geojson layer. Optionally include clusterOptions for radius, maxZoom, colors.",
+  'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color.',
 ];
 
 const COORDINATE_EXAMPLES = [

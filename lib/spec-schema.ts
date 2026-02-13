@@ -72,14 +72,44 @@ const LayerStyleSchema = z.object({
   opacity: z.number().min(0).max(1).optional(),
 });
 
+const ClusterOptionsSchema = z.object({
+  radius: z.number().optional(),
+  maxZoom: z.number().optional(),
+  minPoints: z.number().optional(),
+  colors: z.tuple([z.string(), z.string(), z.string()]).optional(),
+});
+
 const GeoJsonLayerSchema = z.object({
   type: z.literal("geojson"),
   data: z.union([z.string(), z.record(z.string(), z.unknown())]),
   style: LayerStyleSchema.optional(),
   tooltip: z.array(z.string()).optional(),
+  cluster: z.boolean().optional(),
+  clusterOptions: ClusterOptionsSchema.optional(),
 });
 
-const LayerSchema = GeoJsonLayerSchema;
+const RouteStyleSchema = z.object({
+  color: z.string().optional(),
+  width: z.number().optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  dashed: z.boolean().optional(),
+});
+
+const RouteLayerSchema = z.object({
+  type: z.literal("route"),
+  coordinates: z.array(z.tuple([z.number(), z.number()])).min(2),
+  style: RouteStyleSchema.optional(),
+});
+
+const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema]);
+
+/* ---- Legend ---- */
+
+const LegendSchema = z.object({
+  layer: z.string(),
+  title: z.string().optional(),
+  position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
+});
 
 /* ---- Controls ---- */
 
@@ -103,6 +133,7 @@ export const MapSpecSchema = z.object({
   markers: z.record(z.string(), MarkerSchema).optional(),
   layers: z.record(z.string(), LayerSchema).optional(),
   controls: ControlsSchema.optional(),
+  legend: z.record(z.string(), LegendSchema).optional(),
 });
 
 /* ---- Validation helpers ---- */

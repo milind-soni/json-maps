@@ -55,14 +55,36 @@ export interface LayerStyle {
   opacity?: number;
 }
 
+export interface ClusterOptions {
+  radius?: number;
+  maxZoom?: number;
+  minPoints?: number;
+  colors?: [string, string, string];
+}
+
 export interface GeoJsonLayerSpec {
   type: "geojson";
   data: string | Record<string, unknown>;
   style?: LayerStyle;
   tooltip?: string[];
+  cluster?: boolean;
+  clusterOptions?: ClusterOptions;
 }
 
-export type LayerSpec = GeoJsonLayerSpec;
+export interface RouteStyle {
+  color?: string;
+  width?: number;
+  opacity?: number;
+  dashed?: boolean;
+}
+
+export interface RouteLayerSpec {
+  type: "route";
+  coordinates: [number, number][];
+  style?: RouteStyle;
+}
+
+export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec;
 
 /* ---- Controls ---- */
 
@@ -80,6 +102,14 @@ export interface ControlsSpec {
   position?: ControlPosition;
 }
 
+/* ---- Legend ---- */
+
+export interface LegendSpec {
+  layer: string;
+  title?: string;
+  position?: ControlPosition;
+}
+
 /* ---- Map spec ---- */
 
 export interface MapSpec {
@@ -92,6 +122,7 @@ export interface MapSpec {
   markers?: Record<string, MarkerSpec>;
   layers?: Record<string, LayerSpec>;
   controls?: ControlsSpec;
+  legend?: Record<string, LegendSpec>;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {

@@ -239,15 +239,37 @@ export default function MapPage() {
       }
     }
 
-    // Add GeoJSON layers
+    // Add layers
     if (spec.layers) {
       map.on("load", () => {
         for (const [id, layer] of Object.entries(spec.layers)) {
-          if (layer.type !== "geojson") continue;
-          const s = layer.style || {};
           const sourceId = "layer-" + id;
 
-          map.addSource(sourceId, { type: "geojson", data: layer.data });
+          if (layer.type === "route") {
+            const rs = layer.style || {};
+            map.addSource(sourceId, {
+              type: "geojson",
+              data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: layer.coordinates } },
+            });
+            const paint: Record<string, unknown> = {
+              "line-color": rs.color || "#3b82f6", "line-width": rs.width || 3, "line-opacity": rs.opacity ?? 0.8,
+            };
+            if (rs.dashed) paint["line-dasharray"] = [6, 3];
+            map.addLayer({ id: sourceId + "-line", type: "line", source: sourceId, layout: { "line-join": "round", "line-cap": "round" }, paint });
+            continue;
+          }
+
+          // GeoJSON layer
+          const s = layer.style || {};
+          const sourceOpts: Record<string, unknown> = { type: "geojson", data: layer.data };
+          if (layer.cluster) {
+            const co = layer.clusterOptions || {};
+            sourceOpts.cluster = true;
+            sourceOpts.clusterRadius = co.radius ?? 50;
+            sourceOpts.clusterMaxZoom = co.maxZoom ?? 14;
+            sourceOpts.clusterMinPoints = co.minPoints ?? 2;
+          }
+          map.addSource(sourceId, sourceOpts as maplibregl.SourceSpecification);
 
           map.addLayer({
             id: sourceId + "-fill", type: "fill", source: sourceId,
@@ -258,9 +280,13 @@ export default function MapPage() {
             id: sourceId + "-line", type: "line", source: sourceId,
             paint: { "line-color": s.lineColor || "#333333", "line-width": s.lineWidth ?? 1 },
           });
+
+          const circleFilter = layer.cluster
+            ? ["all", ["!", ["has", "point_count"]], ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]]]
+            : ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]];
           map.addLayer({
             id: sourceId + "-circle", type: "circle", source: sourceId,
-            filter: ["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]],
+            filter: circleFilter,
             paint: {
               "circle-color": s.pointColor || s.fillColor || "#3b82f6",
               "circle-radius": s.pointRadius || 5,
@@ -268,6 +294,32 @@ export default function MapPage() {
               "circle-stroke-width": s.lineWidth ?? 1, "circle-stroke-color": s.lineColor || "#333333",
             },
           });
+
+          if (layer.cluster) {
+            const colors = layer.clusterOptions?.colors || ["#22c55e", "#eab308", "#ef4444"];
+            map.addLayer({
+              id: sourceId + "-cluster", type: "circle", source: sourceId,
+              filter: ["has", "point_count"],
+              paint: {
+                "circle-color": ["step", ["get", "point_count"], colors[0], 100, colors[1], 750, colors[2]],
+                "circle-radius": ["step", ["get", "point_count"], 20, 100, 30, 750, 40],
+                "circle-stroke-width": 1, "circle-stroke-color": "#fff", "circle-opacity": 0.85,
+              },
+            });
+            map.addLayer({
+              id: sourceId + "-cluster-count", type: "symbol", source: sourceId,
+              filter: ["has", "point_count"],
+              layout: { "text-field": "{point_count_abbreviated}", "text-size": 12 },
+              paint: { "text-color": "#fff" },
+            });
+            map.on("click", sourceId + "-cluster", async (e) => {
+              const features = map.queryRenderedFeatures(e.point, { layers: [sourceId + "-cluster"] });
+              if (!features.length) return;
+              const src = map.getSource(sourceId) as maplibregl.GeoJSONSource;
+              const zoom = await src.getClusterExpansionZoom(features[0].properties?.cluster_id);
+              map.easeTo({ center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number], zoom });
+            });
+          }
 
           if (layer.tooltip && layer.tooltip.length > 0) {
             const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, maxWidth: "280px" });
