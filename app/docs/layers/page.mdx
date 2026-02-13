@@ -1,0 +1,65 @@
+export const metadata = { title: "Layers" }
+
+# Layers
+
+> Layers are coming soon. This page describes the planned API.
+
+Layers render data on the map — polygons, lines, points, tiles, and more.
+
+## Planned Spec
+
+```json
+{
+  "layers": {
+    "buildings": {
+      "type": "vector",
+      "name": "Buildings",
+      "data": "https://example.com/buildings.geojson",
+      "style": {
+        "fillColor": "#3498db",
+        "opacity": 0.6,
+        "lineColor": "#2980b9",
+        "lineWidth": 1
+      },
+      "tooltip": ["name", "height"]
+    }
+  }
+}
+```
+
+## Layer Types
+
+| Type | Description | Data Source |
+|------|-------------|------------|
+| `vector` | GeoJSON features (points, lines, polygons) | Inline GeoJSON or URL |
+| `mvt` | Mapbox Vector Tiles | Tile URL template |
+| `raster` | XYZ raster tiles or images | Tile URL template |
+| `pmtiles` | PMTiles archive | `.pmtiles` URL |
+| `hex` | H3 hexagons (via Deck.gl) | Data array or tiles |
+
+## Style Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `fillColor` | `ColorValue` | Fill color (static, continuous, or categorical) |
+| `lineColor` | `ColorValue` | Stroke/outline color |
+| `opacity` | `number` | Layer opacity (0–1) |
+| `lineWidth` | `number` | Stroke width in pixels |
+| `pointRadius` | `number` | Point radius in pixels |
+| `extruded` | `boolean` | Enable 3D extrusion |
+| `elevationAttr` | `string` | Property name for extrusion height |
+
+## Data-Driven Styling
+
+Colors can be static or data-driven. See the [Color System](/docs/colors) page for details on continuous and categorical color mapping.
+
+```json
+{
+  "fillColor": {
+    "type": "continuous",
+    "attr": "temperature",
+    "palette": "Sunset",
+    "domain": [0, 40]
+  }
+}
+```

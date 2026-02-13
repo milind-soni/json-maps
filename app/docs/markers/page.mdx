@@ -1,0 +1,45 @@
+export const metadata = { title: "Markers" }
+
+# Markers
+
+> Markers are coming soon. This page describes the planned API.
+
+Markers are named pins on the map with optional labels and popups.
+
+## Planned Spec
+
+```json
+{
+  "markers": {
+    "home": {
+      "coordinates": [-73.98, 40.75],
+      "color": "#e74c3c",
+      "label": "Home",
+      "popup": "Starting point"
+    },
+    "office": {
+      "coordinates": [-73.99, 40.74],
+      "color": "#3498db",
+      "label": "Office"
+    }
+  }
+}
+```
+
+## Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `coordinates` | `[lng, lat]` | Yes | Marker position |
+| `color` | `string` | No | Marker color (default: map default) |
+| `label` | `string` | No | Text label displayed near marker |
+| `popup` | `string` | No | Content shown on click |
+| `draggable` | `boolean` | No | Whether marker can be dragged |
+
+## Why Named Map?
+
+Markers use a named map (`{ "home": {...} }`) instead of an array. This makes it easy to:
+
+- Reference individual markers by key
+- Update or remove a specific marker via JSON patches
+- Stream marker additions without replacing the whole array

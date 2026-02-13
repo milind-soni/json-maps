@@ -1,0 +1,117 @@
+export const metadata = { title: "Color System" }
+
+# Color System
+
+> The color system is coming soon. This page describes the planned API.
+
+json-maps uses a flexible color system adapted from [fusedmaps](https://github.com/milind-soni/fusedmaps). Colors can be static values or data-driven mappings.
+
+## Color Value Types
+
+A `ColorValue` can be one of:
+
+- **Static string** — `"#e74c3c"`, `"rgb(52, 152, 219)"`, `"steelblue"`
+- **RGB array** — `[231, 76, 60]`
+- **Continuous mapping** — numeric attribute to gradient
+- **Categorical mapping** — string attribute to discrete colors
+
+## Continuous
+
+Map a numeric property to a color gradient using a palette.
+
+```json
+{
+  "type": "continuous",
+  "attr": "temperature",
+  "palette": "Sunset",
+  "domain": [0, 40],
+  "steps": 7
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `"continuous"` | Yes | Identifies this as continuous |
+| `attr` | `string` | Yes | Feature property name |
+| `palette` | `string` | Yes | CartoColor palette name |
+| `domain` | `[min, max]` | No | Value range (auto-detected if omitted) |
+| `steps` | `number` | No | Color steps 2–12 (default: 7) |
+| `nullColor` | `string` | No | Color for null/missing values |
+
+## Categorical
+
+Map a string property to discrete colors.
+
+```json
+{
+  "type": "categorical",
+  "attr": "zone_type",
+  "palette": "Bold",
+  "categories": ["residential", "commercial", "industrial"]
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `type` | `"categorical"` | Yes | Identifies this as categorical |
+| `attr` | `string` | Yes | Feature property name |
+| `palette` | `string` | No | CartoColor palette name |
+| `categories` | `string[]` | No | Explicit category list |
+| `nullColor` | `string` | No | Color for null/missing values |
+
+## Palettes
+
+Uses [CartoColor](https://carto.com/carto-colors/) palettes (90+).
+
+**Sequential**: Viridis, Sunset, SunsetDark, Mint, Emrld, Teal, BluYl, Peach, Burg, RedOr, Earth
+
+**Categorical**: Bold, Pastel, Antique, Vivid, Prism, Safe
+
+**Diverging**: TealRose, Geyser, Temps, Fall, ArmyRose, Tropic
+
+## Examples
+
+Choropleth with continuous color:
+
+```json
+{
+  "layers": {
+    "population": {
+      "type": "vector",
+      "data": "https://example.com/states.geojson",
+      "style": {
+        "fillColor": {
+          "type": "continuous",
+          "attr": "population",
+          "palette": "Viridis",
+          "domain": [500000, 40000000]
+        },
+        "opacity": 0.7,
+        "lineColor": "#fff",
+        "lineWidth": 0.5
+      }
+    }
+  }
+}
+```
+
+Zoning map with categorical color:
+
+```json
+{
+  "layers": {
+    "zones": {
+      "type": "vector",
+      "data": "https://example.com/zones.geojson",
+      "style": {
+        "fillColor": {
+          "type": "categorical",
+          "attr": "zone_type",
+          "palette": "Bold"
+        },
+        "opacity": 0.6
+      }
+    }
+  }
+}
+```

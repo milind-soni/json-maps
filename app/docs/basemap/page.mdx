@@ -1,0 +1,58 @@
+export const metadata = { title: "Basemap" }
+
+# Basemap
+
+The `basemap` field controls the map's background style. It accepts a preset name or a custom style URL.
+
+## Presets
+
+```json
+{ "basemap": "light" }
+```
+
+| Preset | Style | Source |
+|--------|-------|--------|
+| `light` | Clean, minimal light theme | CARTO Positron |
+| `dark` | Dark background, light labels | CARTO Dark Matter |
+| `streets` | Colorful with road detail | CARTO Voyager |
+
+If `basemap` is omitted, it defaults to `light`.
+
+## Custom Style URL
+
+You can pass any MapLibre-compatible style URL:
+
+```json
+{ "basemap": "https://your-server.com/style.json" }
+```
+
+The URL must point to a valid [MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/) JSON document.
+
+## How It Works
+
+Basemap changes call `map.setStyle()` on the MapLibre instance. The map re-renders with the new style while preserving the current viewport.
+
+```typescript
+// From lib/spec.ts
+export const BASEMAP_STYLES: Record<string, string> = {
+  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+  streets: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+};
+```
+
+## Examples
+
+Dark theme:
+```json
+{ "basemap": "dark" }
+```
+
+Streets with viewport:
+```json
+{
+  "basemap": "streets",
+  "center": [2.35, 48.86],
+  "zoom": 13
+}
+```

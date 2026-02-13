@@ -1,0 +1,64 @@
+export const metadata = { title: "Quick Start" }
+
+# Quick Start
+
+Get a map running in under a minute.
+
+## 1. Import the Renderer
+
+```tsx
+import { MapRenderer } from "@/components/map-renderer";
+```
+
+## 2. Define a Spec
+
+```tsx
+const spec = {
+  basemap: "dark",
+  center: [-73.98, 40.75],
+  zoom: 13,
+};
+```
+
+## 3. Render It
+
+```tsx
+<MapRenderer spec={spec} />
+```
+
+That's it. The `MapRenderer` component takes a `MapSpec` object and renders a full interactive MapLibre map.
+
+## Try the Playground
+
+The fastest way to experiment is the [Playground](/playground). Type JSON on the left, see the map update on the right.
+
+Try pasting this:
+
+```json
+{
+  "basemap": "streets",
+  "center": [-122.4194, 37.7749],
+  "zoom": 12,
+  "pitch": 60,
+  "bearing": -30
+}
+```
+
+This shows San Francisco with a 3D perspective on the streets basemap.
+
+## Reactive Updates
+
+The renderer reacts to spec changes. When you update the spec object, the map smoothly transitions:
+
+- **Basemap** changes swap the style
+- **Viewport** changes animate with `flyTo()`
+- **Bounds** changes use `fitBounds()` with padding
+
+```tsx
+// Change the spec and the map animates
+const [spec, setSpec] = useState({ basemap: "light", zoom: 2 });
+
+// Later...
+setSpec({ basemap: "dark", center: [139.69, 35.68], zoom: 14 });
+// Map flies to Tokyo with dark basemap
+```

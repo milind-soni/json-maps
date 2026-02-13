@@ -1,0 +1,53 @@
+export const metadata = { title: "Widgets" }
+
+# Widgets
+
+> Widgets are coming soon. This page describes the planned API.
+
+Widgets are informational overlays positioned on the map — legend, layer toggle, basemap switcher, and geocoder.
+
+## Planned Spec
+
+```json
+{
+  "widgets": {
+    "legend": { "position": "top-right", "expanded": true },
+    "layers": { "position": "top-left" },
+    "basemap": { "position": "bottom-right" },
+    "geocoder": false
+  }
+}
+```
+
+## Available Widgets
+
+| Widget | Description |
+|--------|-------------|
+| `legend` | Color legend auto-generated from layer styles |
+| `layers` | Layer visibility toggle panel |
+| `basemap` | Basemap style switcher thumbnails |
+| `geocoder` | Location search bar |
+
+## Configuration
+
+Each widget accepts either:
+
+- A **position string**: `"top-right"` — enabled at that position
+- A **config object**: `{ "position": "top-right", "expanded": true }` — enabled with options
+- **`false`** — explicitly disabled
+
+## Positioning
+
+Widgets use the same four-corner positioning system as controls. Multiple widgets in the same position stack vertically with a gap.
+
+## Legend
+
+The legend auto-generates from layer styles:
+
+- **Continuous colors** — gradient bar with min/max domain labels
+- **Categorical colors** — color swatches with category labels
+- **Static colors** — single color swatch with layer name
+
+## Layer Toggle
+
+A list of all layers with visibility checkboxes. Toggle individual layers on/off without modifying the spec.

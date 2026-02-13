@@ -1,0 +1,53 @@
+export const metadata = { title: "Controls" }
+
+# Controls
+
+> Controls are coming soon. This page describes the planned API.
+
+Map controls are interactive buttons positioned over the map — zoom, compass, locate, fullscreen, and scale bar.
+
+## Planned Spec
+
+```json
+{
+  "controls": {
+    "zoom": true,
+    "compass": true,
+    "locate": false,
+    "fullscreen": false,
+    "scale": true,
+    "position": "bottom-right"
+  }
+}
+```
+
+## Available Controls
+
+| Control | Description |
+|---------|-------------|
+| `zoom` | Plus/minus zoom buttons |
+| `compass` | Reset bearing to north |
+| `locate` | Find user's current location |
+| `fullscreen` | Toggle fullscreen mode |
+| `scale` | Scale bar showing distance |
+
+## Positioning
+
+Controls are rendered as React components with absolute positioning over the map container. The `position` field accepts:
+
+- `top-left`
+- `top-right`
+- `bottom-left`
+- `bottom-right`
+
+Default position is `bottom-right`.
+
+```
+┌───────────────────────────┐
+│ top-left      top-right   │
+│                           │
+│           MAP             │
+│                           │
+│ bottom-left bottom-right  │
+└───────────────────────────┘
+```

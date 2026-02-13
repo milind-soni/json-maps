@@ -1,0 +1,48 @@
+export const metadata = { title: "Installation" }
+
+# Installation
+
+json-maps is currently in active development. For now, clone the repository and use the components directly.
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/milind-soni/json-maps.git
+cd json-maps
+npm install
+```
+
+## Run the Dev Server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to see the landing page, or go to [/playground](/playground) to start editing specs.
+
+## Project Structure
+
+```bash
+json-maps/
+├── lib/
+│   └── spec.ts           # MapSpec type + basemap resolver
+├── components/
+│   ├── map-renderer.tsx   # Core renderer: spec → map
+│   ├── playground.tsx     # JSON editor + live preview
+│   └── demo.tsx           # Landing page AI demo
+├── app/
+│   ├── (main)/page.tsx    # Landing page
+│   ├── playground/        # Playground route
+│   └── docs/              # Documentation
+└── PLAN.md                # Full project plan
+```
+
+## Dependencies
+
+json-maps uses the following core dependencies:
+
+- **[MapLibre GL](https://maplibre.org/)** — open-source map rendering engine
+- **[React](https://react.dev/)** — UI framework for widgets and overlays
+- **[Next.js](https://nextjs.org/)** — framework for the website and docs
+
+No API keys required. Basemaps are served free by [CARTO](https://carto.com/).
