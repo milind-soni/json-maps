@@ -13,7 +13,7 @@ export default function Home() {
           Declarative Maps from JSON
         </p>
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter mb-6">
-          JSON &rarr; Map
+          AI &rarr; JSON &rarr; Map
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
           Describe an interactive map as JSON, get markers, routes, layers, and
