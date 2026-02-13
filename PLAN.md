@@ -277,7 +277,16 @@ Each position slot uses absolute CSS positioning with z-index layering. Multiple
 
 ### Component Reuse
 
-Where possible, internal React components should be built as standalone, composable pieces (markers, controls, popups, tooltips, clustering). The spec layer translates JSON into these components — so the rendering internals are clean React code that could be used independently. This keeps the architecture flexible: the JSON spec is one interface, but the components underneath are reusable.
+Where possible, internal React components should be built as standalone, composable pieces. The spec layer translates JSON into these components — so the rendering internals are clean React code that could be used independently. This keeps the architecture flexible: the JSON spec is one interface, but the components underneath are reusable.
+
+Specific components to build as reusable internals:
+
+- **MapControls** — zoom/compass/locate/fullscreen buttons with grouped border styling. The compass rotates dynamically based on map bearing and pitch using CSS transforms. When the spec has `"controls": { "zoom": true }`, the renderer instantiates these components.
+- **Marker rendering** — use React portals (`createPortal`) to render custom React content inside MapLibre marker DOM elements. This allows rich marker content (icons, labels, interactive elements) instead of the default pin. Portals keep the React tree intact while rendering into MapLibre-managed DOM.
+- **MapPopup / MarkerTooltip** — popup and tooltip components with fade-in animations, rendered as React overlays attached to map coordinates. When the spec says `"popup": "some content"`, the renderer creates a popup component at the marker's position.
+- **MapClusterLayer** — point clustering with configurable colors, thresholds, and radius. Clusters expand on click. Uses MapLibre's native clustering under the hood with React rendering for cluster badges.
+- **MapRoute** — GeoJSON LineString rendering with configurable color and width. Manages MapLibre source/layer lifecycle (add on mount, remove on unmount). Useful for the vector layer's line geometry support.
+- **Theme awareness** — auto-detect light/dark mode from the document (via class or `prefers-color-scheme`) and switch basemap styles accordingly when no explicit basemap is set in the spec. Watch for theme changes via `MutationObserver` on the document element.
 
 ---
 
