@@ -1,0 +1,110 @@
+export const metadata = { title: "Component Slots" }
+
+# Component Slots
+
+Replace the default marker, popup, tooltip, and layer tooltip components with your own.
+
+## Usage
+
+```tsx
+import { MapRenderer, type MarkerComponentProps } from "json-maps";
+
+function CustomMarker({ marker, color }: MarkerComponentProps) {
+  return (
+    <div style={{
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      background: color,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "white",
+      fontSize: 14,
+      fontWeight: "bold",
+    }}>
+      {marker.label?.[0] ?? "·"}
+    </div>
+  );
+}
+
+<MapRenderer
+  spec={spec}
+  components={{ Marker: CustomMarker }}
+/>
+```
+
+## Available Slots
+
+Pass any combination of custom components via the `components` prop:
+
+```tsx
+components?: {
+  Marker?: React.ComponentType<MarkerComponentProps>;
+  Popup?: React.ComponentType<PopupComponentProps>;
+  Tooltip?: React.ComponentType<TooltipComponentProps>;
+  LayerTooltip?: React.ComponentType<LayerTooltipComponentProps>;
+}
+```
+
+Any slot you don't provide uses the built-in default.
+
+## Marker
+
+Renders the visual element for each marker on the map.
+
+```tsx
+interface MarkerComponentProps {
+  id: string;           // marker key from spec
+  marker: MarkerSpec;   // full marker spec
+  color: string;        // resolved color (defaults applied)
+}
+```
+
+## Popup
+
+Renders the popup content shown when a marker is clicked.
+
+```tsx
+interface PopupComponentProps {
+  id: string;
+  marker: MarkerSpec;
+}
+```
+
+Return `null` if the marker has no popup.
+
+## Tooltip
+
+Renders the hover tooltip for markers.
+
+```tsx
+interface TooltipComponentProps {
+  id: string;
+  text: string;   // the tooltip string from the marker spec
+}
+```
+
+## Layer Tooltip
+
+Renders the hover tooltip for GeoJSON features and route layers.
+
+```tsx
+interface LayerTooltipComponentProps {
+  properties: Record<string, unknown>;  // feature properties
+  columns: string[];                     // which properties to display
+}
+```
+
+## Defaults
+
+The built-in defaults are exported so you can extend them:
+
+```tsx
+import {
+  DefaultMarker,
+  DefaultPopup,
+  DefaultTooltip,
+  DefaultLayerTooltip,
+} from "json-maps";
+```

@@ -2,50 +2,66 @@ export const metadata = { title: "Controls" }
 
 # Controls
 
-> Controls are coming soon. This page describes the planned API.
+Map controls are interactive buttons positioned over the map — zoom, compass, locate, and fullscreen.
 
-Map controls are interactive buttons positioned over the map — zoom, compass, locate, fullscreen, and scale bar.
-
-## Planned Spec
+## Usage
 
 ```json
 {
   "controls": {
     "zoom": true,
     "compass": true,
-    "locate": false,
     "fullscreen": false,
-    "scale": true,
-    "position": "bottom-right"
+    "locate": false,
+    "position": "top-right"
   }
 }
 ```
 
-## Available Controls
+## Properties
 
-- **`zoom`** — plus / minus zoom buttons
-- **`compass`** — reset bearing to north
-- **`locate`** — find user's current location
-- **`fullscreen`** — toggle fullscreen mode
-- **`scale`** — scale bar showing distance
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `zoom` | `boolean` | `true` | Show zoom in/out buttons |
+| `compass` | `boolean` | `true` | Show compass / reset north button |
+| `fullscreen` | `boolean` | `false` | Show fullscreen toggle |
+| `locate` | `boolean` | `false` | Show locate-me button (uses browser geolocation) |
+| `position` | `ControlPosition` | `"top-right"` | Corner to place controls |
 
 ## Positioning
 
-Controls are rendered as React components with absolute positioning over the map container. The `position` field accepts:
+Controls are rendered as React components with absolute positioning over the map container:
 
-- `top-left`
-- `top-right`
-- `bottom-left`
-- `bottom-right`
+- `"top-left"`
+- `"top-right"` (default)
+- `"bottom-left"`
+- `"bottom-right"`
 
-Default position is `bottom-right`.
+## Defaults
 
+When `controls` is set in the spec, zoom and compass are enabled by default. If `controls` is omitted entirely, no controls are shown.
+
+```json
+{ "controls": {} }
 ```
-┌───────────────────────────┐
-│ top-left      top-right   │
-│                           │
-│           MAP             │
-│                           │
-│ bottom-left bottom-right  │
-└───────────────────────────┘
+
+This shows zoom + compass at top-right.
+
+## Example
+
+Full controls at bottom-right:
+
+```json
+{
+  "basemap": "streets",
+  "center": [-73.98, 40.75],
+  "zoom": 13,
+  "controls": {
+    "zoom": true,
+    "compass": true,
+    "fullscreen": true,
+    "locate": true,
+    "position": "bottom-right"
+  }
+}
 ```

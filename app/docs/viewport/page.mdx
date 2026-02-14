@@ -11,6 +11,7 @@ The viewport controls the camera position — where the map is looking and from 
 - **`pitch`** — `number` — camera tilt in degrees 0–85 (default: `0`)
 - **`bearing`** — `number` — camera rotation in degrees -180–180, 0 = north (default: `0`)
 - **`bounds`** — `[west, south, east, north]` — fit map to bounding box (overrides center/zoom)
+- **`projection`** — `"mercator"` | `"globe"` — map projection (default: `"mercator"`)
 
 ## Center and Zoom
 
@@ -59,6 +60,21 @@ Instead of center/zoom, you can specify a bounding box. The map will automatical
 This fits the map to show all of New York City. The format is `[west, south, east, north]`.
 
 When `bounds` is set, it takes priority over `center` and `zoom`.
+
+## Projection
+
+Switch between flat Mercator and 3D globe projection.
+
+```json
+{
+  "center": [0, 20],
+  "zoom": 1.5,
+  "projection": "globe"
+}
+```
+
+- `"mercator"` — default flat projection, standard for most maps
+- `"globe"` — 3D spherical view, great for world-scale visualizations
 
 ## Transitions
 

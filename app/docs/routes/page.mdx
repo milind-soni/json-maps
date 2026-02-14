@@ -1,0 +1,131 @@
+export const metadata = { title: "Routes" }
+
+# Routes
+
+Routes are line layers for paths, directions, and connections. They can use manual coordinates or auto-route via OSRM/Mapbox.
+
+## Manual Coordinates
+
+Provide an array of `[lng, lat]` pairs:
+
+```json
+{
+  "layers": {
+    "trail": {
+      "type": "route",
+      "coordinates": [
+        [-73.9855, 40.7580],
+        [-73.9810, 40.7650],
+        [-73.9730, 40.7700],
+        [-73.9654, 40.7829]
+      ],
+      "style": { "color": "#22c55e", "width": 3, "dashed": true },
+      "tooltip": "Walking trail · 2.1 km"
+    }
+  }
+}
+```
+
+## Auto-Routing (OSRM)
+
+Provide `from` and `to` instead of `coordinates`. The renderer fetches real road-following geometry automatically:
+
+```json
+{
+  "layers": {
+    "drive": {
+      "type": "route",
+      "from": [-73.9855, 40.7580],
+      "to": [-73.9654, 40.7829],
+      "profile": "driving",
+      "style": { "color": "#3b82f6", "width": 4 },
+      "tooltip": "Driving route · Times Square → Central Park"
+    }
+  }
+}
+```
+
+The route will follow real roads, not a straight line.
+
+## Waypoints
+
+Add intermediate stops for multi-point routes:
+
+```json
+{
+  "layers": {
+    "tour": {
+      "type": "route",
+      "from": [-73.9855, 40.7580],
+      "to": [-73.9654, 40.7829],
+      "waypoints": [[-73.9776, 40.7527], [-73.9712, 40.7831]],
+      "profile": "walking",
+      "style": { "color": "#f59e0b", "width": 3 }
+    }
+  }
+}
+```
+
+## Properties
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"route"` | Yes | Layer type |
+| `coordinates` | `[lng, lat][]` | One of coordinates or from/to | Manual path points |
+| `from` | `[lng, lat]` | One of coordinates or from/to | Route start point |
+| `to` | `[lng, lat]` | Required with `from` | Route end point |
+| `waypoints` | `[lng, lat][]` | No | Intermediate stops (with from/to) |
+| `profile` | `string` | No | `"driving"` \| `"walking"` \| `"cycling"` (default: `"driving"`) |
+| `style` | `RouteStyle` | No | Line styling |
+| `tooltip` | `string` | No | Text shown on hover |
+
+## Style Properties
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `color` | `string` | `"#3b82f6"` | Line color |
+| `width` | `number` | `3` | Line width in pixels |
+| `opacity` | `number` | `0.8` | Line opacity (0–1) |
+| `dashed` | `boolean` | `false` | Dashed line style |
+
+## Routing Providers
+
+By default, auto-routing uses the public OSRM demo server. You can swap in Mapbox or a custom provider. See [Routing Providers](/docs/routing-providers).
+
+## Fallback
+
+If the routing service is unreachable, the route falls back to a straight line between the points.
+
+## Full Example
+
+```json
+{
+  "basemap": "streets",
+  "center": [-73.975, 40.765],
+  "zoom": 14,
+  "markers": {
+    "start": {
+      "coordinates": [-73.9855, 40.758],
+      "color": "#e74c3c",
+      "icon": "star",
+      "tooltip": "Times Square"
+    },
+    "end": {
+      "coordinates": [-73.9654, 40.7829],
+      "color": "#22c55e",
+      "icon": "tree-pine",
+      "tooltip": "Central Park"
+    }
+  },
+  "layers": {
+    "route": {
+      "type": "route",
+      "from": [-73.9855, 40.758],
+      "to": [-73.9654, 40.7829],
+      "profile": "driving",
+      "style": { "color": "#3b82f6", "width": 4 },
+      "tooltip": "Driving route · Times Square → Central Park"
+    }
+  }
+}
+```

@@ -1,3 +1,5 @@
+import type { RoutingProvider } from "./routing";
+
 export interface PopupSpec {
   title?: string;
   description?: string;
@@ -80,10 +82,22 @@ export interface RouteStyle {
   dashed?: boolean;
 }
 
+export type RouteProfile = "driving" | "walking" | "cycling";
+
 export interface RouteLayerSpec {
   type: "route";
-  coordinates: [number, number][];
+  /** Manual coordinates — provide these OR from/to, not both */
+  coordinates?: [number, number][];
+  /** Start point [lng, lat] — triggers OSRM routing */
+  from?: [number, number];
+  /** End point [lng, lat] — triggers OSRM routing */
+  to?: [number, number];
+  /** Intermediate waypoints for OSRM routing */
+  waypoints?: [number, number][];
+  /** Routing profile (default "driving") */
+  profile?: RouteProfile;
   style?: RouteStyle;
+  tooltip?: string;
 }
 
 export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec;
@@ -170,11 +184,15 @@ export interface MapComponents {
 export interface MapRendererProps {
   spec: MapSpec;
   components?: Partial<MapComponents>;
+  children?: React.ReactNode;
+  /** Routing provider for from/to routes (default: OSRM demo server) */
+  routingProvider?: RoutingProvider;
   onViewportChange?: (viewport: MapViewport) => void;
   onMarkerClick?: (markerId: string, coordinates: [number, number]) => void;
   onMarkerDragStart?: (markerId: string, coordinates: [number, number]) => void;
   onMarkerDrag?: (markerId: string, coordinates: [number, number]) => void;
   onMarkerDragEnd?: (markerId: string, coordinates: [number, number]) => void;
+  onLayerClick?: (layerId: string, coordinates: [number, number]) => void;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {

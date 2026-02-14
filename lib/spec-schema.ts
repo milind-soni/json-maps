@@ -99,9 +99,17 @@ const RouteStyleSchema = z.object({
 
 const RouteLayerSchema = z.object({
   type: z.literal("route"),
-  coordinates: z.array(z.tuple([z.number(), z.number()])).min(2),
+  coordinates: z.array(z.tuple([z.number(), z.number()])).min(2).optional(),
+  from: z.tuple([z.number(), z.number()]).optional(),
+  to: z.tuple([z.number(), z.number()]).optional(),
+  waypoints: z.array(z.tuple([z.number(), z.number()])).optional(),
+  profile: z.enum(["driving", "walking", "cycling"]).optional(),
   style: RouteStyleSchema.optional(),
-});
+  tooltip: z.string().optional(),
+}).refine(
+  (d) => (d.coordinates && d.coordinates.length >= 2) || (d.from && d.to),
+  { message: "Route must have either coordinates (min 2 points) or from+to" },
+);
 
 const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema]);
 

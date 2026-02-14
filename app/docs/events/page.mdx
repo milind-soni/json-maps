@@ -1,0 +1,88 @@
+export const metadata = { title: "Events" }
+
+# Events
+
+Events are callback props on `MapRenderer`. They're not part of the JSON spec — they're React props for handling user interactions.
+
+## All Events
+
+```tsx
+<MapRenderer
+  spec={spec}
+  onViewportChange={(viewport) => { /* { center, zoom, pitch, bearing } */ }}
+  onMarkerClick={(markerId, coordinates) => { }}
+  onMarkerDragStart={(markerId, coordinates) => { }}
+  onMarkerDrag={(markerId, coordinates) => { }}
+  onMarkerDragEnd={(markerId, coordinates) => { }}
+  onLayerClick={(layerId, coordinates) => { }}
+/>
+```
+
+## Viewport Change
+
+Fires when the user pans, zooms, or rotates the map.
+
+```tsx
+onViewportChange?: (viewport: MapViewport) => void;
+
+interface MapViewport {
+  center: [number, number];
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+```
+
+This only fires for user-initiated moves (pan, scroll, pinch). Programmatic changes like `flyTo` triggered by spec changes do not fire this callback.
+
+## Marker Click
+
+Fires when the user clicks a marker.
+
+```tsx
+onMarkerClick?: (markerId: string, coordinates: [number, number]) => void;
+```
+
+The `markerId` matches the key in the `markers` spec object.
+
+## Marker Drag
+
+Three drag events for draggable markers. Set `draggable: true` on the marker spec to enable.
+
+```tsx
+onMarkerDragStart?: (markerId: string, coordinates: [number, number]) => void;
+onMarkerDrag?: (markerId: string, coordinates: [number, number]) => void;
+onMarkerDragEnd?: (markerId: string, coordinates: [number, number]) => void;
+```
+
+`onMarkerDrag` fires continuously as the marker is dragged. `onMarkerDragEnd` is the most commonly used — it gives you the final position.
+
+## Layer Click
+
+Fires when the user clicks any feature in a GeoJSON or route layer.
+
+```tsx
+onLayerClick?: (layerId: string, coordinates: [number, number]) => void;
+```
+
+Works for all layer sub-types: fill polygons, circle points, lines, and routes.
+
+## Controlled Viewport
+
+You can create a controlled map by combining `onViewportChange` with spec updates:
+
+```tsx
+const [spec, setSpec] = useState({
+  center: [-73.98, 40.75],
+  zoom: 12,
+});
+
+<MapRenderer
+  spec={spec}
+  onViewportChange={(viewport) => {
+    setSpec((prev) => ({ ...prev, ...viewport }));
+  }}
+/>
+```
+
+This keeps the spec in sync with what the user sees on the map.

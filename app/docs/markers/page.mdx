@@ -2,28 +2,28 @@ export const metadata = { title: "Markers" }
 
 # Markers
 
-Markers are named pins on the map with optional colors, labels, tooltips, and popups.
+Markers are named pins on the map with optional colors, icons, labels, tooltips, and popups.
 
 ## Basic Usage
 
 ```json
 {
   "markers": {
-    "home": {
+    "cafe": {
       "coordinates": [-73.98, 40.75],
       "color": "#e74c3c",
-      "label": "Home",
-      "tooltip": "Starting point · Midtown",
+      "icon": "coffee",
+      "tooltip": "Blue Bottle · Midtown",
       "popup": {
-        "title": "Home",
-        "description": "Starting point"
+        "title": "Blue Bottle Coffee",
+        "description": "Specialty coffee roaster"
       }
     },
-    "office": {
-      "coordinates": [-73.99, 40.74],
-      "color": "#3498db",
-      "label": "Office",
-      "tooltip": "Workspace · Chelsea"
+    "park": {
+      "coordinates": [-73.97, 40.76],
+      "color": "#22c55e",
+      "icon": "tree-pine",
+      "tooltip": "Central Park · Manhattan"
     }
   }
 }
@@ -35,10 +35,46 @@ Markers are named pins on the map with optional colors, labels, tooltips, and po
 |---|---|---|---|
 | `coordinates` | `[lng, lat]` | Yes | Marker position |
 | `color` | `string` | No | Marker color (hex) |
+| `icon` | `string` | No | Lucide icon name in kebab-case (e.g. `"coffee"`, `"hotel"`, `"star"`) |
 | `label` | `string` | No | Text displayed below the marker |
 | `tooltip` | `string` | No | Short text shown on hover |
 | `popup` | `string \| PopupSpec` | No | Content shown when marker is clicked |
 | `draggable` | `boolean` | No | Whether the marker can be dragged |
+| `glow` | `boolean` | No | Adds a colored pulse ring and glow shadow |
+
+## Marker Styles
+
+Markers come in two visual styles:
+
+- **Dot** — default when no `icon` is set. A colored circle with a white border.
+- **Icon** — when `icon` is set. A rounded square with a white Lucide icon inside.
+
+```json
+{
+  "markers": {
+    "plain": { "coordinates": [0, 0], "color": "#e74c3c" },
+    "with-icon": { "coordinates": [1, 0], "color": "#3498db", "icon": "star" }
+  }
+}
+```
+
+## Icons
+
+The `icon` field accepts any [Lucide](https://lucide.dev/) icon name in kebab-case:
+
+`"coffee"`, `"hotel"`, `"utensils"`, `"landmark"`, `"train"`, `"plane"`, `"hospital"`, `"school"`, `"shopping-cart"`, `"fuel"`, `"tree-pine"`, `"mountain"`, `"music"`, `"camera"`, `"heart"`, `"star"`, `"flag"`, `"map-pin"`, `"building-2"`, `"warehouse"`, `"bike"`, `"ship"`, `"bus"`, `"car"`, etc.
+
+## Glow Effect
+
+Set `glow: true` for a pulsing colored ring effect — useful for highlighting active or important markers.
+
+```json
+{
+  "coordinates": [-73.98, 40.75],
+  "color": "#e74c3c",
+  "glow": true
+}
+```
 
 ## Tooltip vs Popup
 
@@ -52,9 +88,7 @@ The `popup` field accepts either a simple string or a rich object:
 **Simple string:**
 
 ```json
-{
-  "popup": "A brief description"
-}
+{ "popup": "A brief description" }
 ```
 
 **Rich popup with title, description, and image:**
@@ -69,29 +103,26 @@ The `popup` field accepts either a simple string or a rich object:
 }
 ```
 
-### PopupSpec Properties
+## Events
 
-| Property | Type | Required | Description |
-|---|---|---|---|
-| `title` | `string` | No | Bold heading at the top |
-| `description` | `string` | No | Body text below the title |
-| `image` | `string` | No | Image URL shown above the content |
+Marker events are handled via props on `MapRenderer`. See [Events](/docs/events) for details.
+
+```tsx
+<MapRenderer
+  spec={spec}
+  onMarkerClick={(id, coords) => console.log(id, coords)}
+  onMarkerDragEnd={(id, coords) => console.log(id, coords)}
+/>
+```
+
+## Custom Markers
+
+You can replace the default marker component with your own. See [Component Slots](/docs/component-slots).
 
 ## Why Named Map?
 
-Markers use a named map (`{ "home": {...} }`) instead of an array. This makes it easy to:
+Markers use a named map (`{ "cafe": {...} }`) instead of an array. This makes it easy to:
 
 - Reference individual markers by key
 - Update or remove a specific marker via JSON patches
 - Stream marker additions without replacing the whole array
-
-## Streaming Example
-
-When AI generates markers, each one arrives as a separate JSONL patch:
-
-```json
-{"op":"add","path":"/markers/tower","value":{"coordinates":[2.2945,48.8584],"color":"#e74c3c","label":"Eiffel Tower","popup":{"title":"Eiffel Tower","description":"330m iron lattice tower, built in 1889"}}}
-{"op":"add","path":"/markers/louvre","value":{"coordinates":[2.3376,48.8606],"color":"#3498db","label":"Louvre Museum","popup":{"title":"Louvre Museum","description":"World's largest art museum, home to the Mona Lisa"}}}
-```
-
-Each marker appears on the map as soon as its patch arrives.

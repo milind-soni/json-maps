@@ -1,0 +1,77 @@
+export const metadata = { title: "Legend" }
+
+# Legend
+
+The legend auto-generates a color key from layers with data-driven styling. It supports continuous gradients and categorical swatches.
+
+## Usage
+
+```json
+{
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": {
+          "type": "continuous",
+          "attr": "mag",
+          "palette": "OrYel",
+          "domain": [0, 7]
+        }
+      }
+    }
+  },
+  "legend": {
+    "magnitude": {
+      "layer": "quakes",
+      "title": "Magnitude",
+      "position": "bottom-left"
+    }
+  }
+}
+```
+
+## Properties
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `layer` | `string` | Yes | ID of the layer to derive the legend from |
+| `title` | `string` | No | Legend title (defaults to layer ID) |
+| `position` | `ControlPosition` | No | `"top-left"` \| `"top-right"` \| `"bottom-left"` \| `"bottom-right"` (default: `"bottom-left"`) |
+
+## How It Works
+
+The legend reads the layer's `style` and generates:
+
+- **Continuous color** — a gradient bar with min/max domain labels
+- **Categorical color** — color swatches with category labels
+
+The legend adapts to the basemap — it uses a dark background on light basemaps and a light background on dark basemaps.
+
+## Multiple Legends
+
+You can add multiple legends for different layers:
+
+```json
+{
+  "legend": {
+    "temperature": {
+      "layer": "temp-layer",
+      "title": "Temperature",
+      "position": "bottom-left"
+    },
+    "population": {
+      "layer": "pop-layer",
+      "title": "Population",
+      "position": "bottom-right"
+    }
+  }
+}
+```
+
+## Tips
+
+- Only add a legend when the layer has data-driven color (continuous or categorical)
+- Keep titles short and descriptive (e.g. "Magnitude", "Population")
+- Don't include palette names in the title

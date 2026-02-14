@@ -25,14 +25,24 @@ export const docsNavigation: NavSection[] = [
       { title: "Viewport", href: "/docs/viewport" },
       { title: "Markers", href: "/docs/markers" },
       { title: "Layers", href: "/docs/layers" },
+      { title: "Routes", href: "/docs/routes" },
       { title: "Controls", href: "/docs/controls" },
-      { title: "Widgets", href: "/docs/widgets" },
+      { title: "Legend", href: "/docs/legend" },
     ],
   },
   {
     title: "Styling",
     items: [
       { title: "Color System", href: "/docs/colors" },
+    ],
+  },
+  {
+    title: "React API",
+    items: [
+      { title: "Events", href: "/docs/events" },
+      { title: "useMap Hook", href: "/docs/use-map" },
+      { title: "Component Slots", href: "/docs/component-slots" },
+      { title: "Routing Providers", href: "/docs/routing-providers" },
     ],
   },
   {

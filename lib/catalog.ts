@@ -66,7 +66,23 @@ const LAYER_FIELDS: Record<string, FieldDef> = {
   },
   coordinates: {
     description:
-      '(route only) array of [longitude, latitude] pairs defining the line path',
+      '(route only) array of [longitude, latitude] pairs defining the line path. Use this OR from/to, not both.',
+  },
+  from: {
+    description:
+      '(route only) start point [longitude, latitude] — triggers OSRM auto-routing. Use with "to".',
+  },
+  to: {
+    description:
+      '(route only) end point [longitude, latitude] — triggers OSRM auto-routing. Use with "from".',
+  },
+  waypoints: {
+    description:
+      '(route only) intermediate waypoints for OSRM routing, e.g. [[lng, lat], [lng, lat]]',
+  },
+  profile: {
+    description:
+      '(route only) OSRM routing profile: "driving" | "walking" | "cycling" (default "driving")',
   },
   style: {
     description: "styling options (geojson: full LayerStyle, route: color/width/opacity/dashed)",
@@ -74,7 +90,7 @@ const LAYER_FIELDS: Record<string, FieldDef> = {
   },
   tooltip: {
     description:
-      '(geojson only) array of property names to show on hover, e.g. ["name", "population"]',
+      'geojson: array of property names to show on hover, e.g. ["name", "population"]. route: string shown on hover, e.g. "Walking route · 2.5 km"',
   },
   cluster: {
     description: "(geojson only) boolean — enable point clustering (default false)",
@@ -224,7 +240,7 @@ const BASE_RULES = [
   "When adding layers with data-driven color, always include the domain range for continuous palettes.",
   "Include tooltip arrays for layers so users can inspect features on hover.",
   'When adding controls, use "/controls" path. Default shows zoom + compass at top-right. Only add controls when user requests interactive UI elements.',
-  'For routes, use type "route" with a coordinates array of [lng, lat] pairs and optional style (color, width, opacity, dashed).',
+  'For routes, use type "route" with EITHER a coordinates array of [lng, lat] pairs for manual paths, OR from/to fields for OSRM auto-routing that follows real roads. Use profile "driving", "walking", or "cycling" (default "driving"). Add waypoints array for intermediate stops. Optional style (color, width, opacity, dashed).',
   "When the user asks for clustering, set cluster: true on the geojson layer. Optionally include clusterOptions for radius, maxZoom, colors.",
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
 ];
@@ -260,6 +276,14 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/center","value":[-120,37]}
 {"op":"replace","path":"/zoom","value":3}
 {"op":"add","path":"/layers/quakes","value":{"type":"geojson","data":"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson","style":{"pointColor":{"type":"continuous","attr":"mag","palette":"OrYel","domain":[0,8]},"pointRadius":4,"opacity":0.8},"tooltip":["place","mag","time"]}}`,
+  },
+  {
+    prompt: "Show a driving route from Times Square to Central Park",
+    output: `{"op":"replace","path":"/center","value":[-73.975,40.765]}
+{"op":"replace","path":"/zoom","value":14}
+{"op":"add","path":"/markers/times-square","value":{"coordinates":[-73.9855,40.7580],"color":"#e74c3c","icon":"star","tooltip":"Times Square","popup":{"title":"Times Square","description":"The iconic intersection and entertainment hub of Midtown Manhattan"}}}
+{"op":"add","path":"/markers/central-park","value":{"coordinates":[-73.9654,40.7829],"color":"#22c55e","icon":"tree-pine","tooltip":"Central Park","popup":{"title":"Central Park","description":"843-acre urban park in the heart of Manhattan"}}}
+{"op":"add","path":"/layers/driving-route","value":{"type":"route","from":[-73.9855,40.7580],"to":[-73.9654,40.7829],"profile":"driving","style":{"color":"#3b82f6","width":4},"tooltip":"Driving route · Times Square → Central Park"}}`,
   },
 ];
 

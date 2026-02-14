@@ -9,7 +9,6 @@ json-maps uses a flexible color system. Colors can be static values or data-driv
 A `ColorValue` can be one of:
 
 - **Static string** — `"#e74c3c"`, `"rgb(52, 152, 219)"`, `"steelblue"`
-- **RGB array** — `[231, 76, 60]`
 - **Continuous mapping** — numeric attribute to gradient
 - **Categorical mapping** — string attribute to discrete colors
 
@@ -22,8 +21,7 @@ Map a numeric property to a color gradient using a palette.
   "type": "continuous",
   "attr": "temperature",
   "palette": "Sunset",
-  "domain": [0, 40],
-  "steps": 7
+  "domain": [0, 40]
 }
 ```
 
@@ -31,7 +29,6 @@ Map a numeric property to a color gradient using a palette.
 - **`attr`** — feature property name (required)
 - **`palette`** — CartoColor palette name (required)
 - **`domain`** — `[min, max]` value range, auto-detected if omitted
-- **`steps`** — color steps 2–12 (default: 7)
 - **`nullColor`** — color for null/missing values
 
 ## Categorical
@@ -71,7 +68,7 @@ Choropleth with continuous color:
 {
   "layers": {
     "population": {
-      "type": "vector",
+      "type": "geojson",
       "data": "https://example.com/states.geojson",
       "style": {
         "fillColor": {
@@ -95,7 +92,7 @@ Zoning map with categorical color:
 {
   "layers": {
     "zones": {
-      "type": "vector",
+      "type": "geojson",
       "data": "https://example.com/zones.geojson",
       "style": {
         "fillColor": {

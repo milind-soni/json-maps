@@ -1,0 +1,74 @@
+export const metadata = { title: "useMap Hook" }
+
+# useMap Hook
+
+The `useMap` hook gives you direct access to the underlying MapLibre GL instance. Use it for advanced operations that aren't covered by the JSON spec.
+
+## Usage
+
+```tsx
+import { MapRenderer, useMap } from "json-maps";
+
+function FlyButton() {
+  const { map, isLoaded } = useMap();
+
+  return (
+    <button
+      onClick={() => map?.flyTo({ center: [139.69, 35.68], zoom: 14 })}
+      disabled={!isLoaded}
+    >
+      Fly to Tokyo
+    </button>
+  );
+}
+
+export default function App() {
+  return (
+    <MapRenderer spec={{ basemap: "streets" }}>
+      <FlyButton />
+    </MapRenderer>
+  );
+}
+```
+
+## Return Value
+
+```tsx
+interface MapContextValue {
+  map: maplibregl.Map | null;   // null before mount
+  isLoaded: boolean;             // true after map "load" event
+}
+```
+
+- `map` — the raw [MapLibre GL Map](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/) instance
+- `isLoaded` — `false` during initialization, `true` once the map style is loaded and layers are ready
+
+## Rules
+
+- Must be called inside a component rendered as a child of `MapRenderer`
+- Throws an error if called outside `MapRenderer`
+- The `map` value is `null` until the MapLibre instance is created
+
+## Children
+
+`MapRenderer` accepts `children`, which are rendered inside the map container. This is how you use `useMap`:
+
+```tsx
+<MapRenderer spec={spec}>
+  {/* These components can call useMap() */}
+  <CustomOverlay />
+  <DrawingTools />
+  <SearchBar />
+</MapRenderer>
+```
+
+Children are rendered on top of the map but inside the container, so they can be positioned with CSS.
+
+## Use Cases
+
+- Custom drawing tools
+- Animation loops
+- Adding native MapLibre layers not covered by the spec
+- Programmatic camera control (flyTo, easeTo)
+- Listening to raw MapLibre events
+- Measuring distances

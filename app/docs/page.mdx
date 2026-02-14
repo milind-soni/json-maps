@@ -29,33 +29,46 @@ This makes maps:
     "tokyo-tower": {
       "coordinates": [139.7454, 35.6586],
       "color": "#e74c3c",
-      "label": "Tokyo Tower",
-      "popup": "333m tall communications and observation tower"
+      "icon": "tower-control",
+      "tooltip": "Tokyo Tower · Minato",
+      "popup": {
+        "title": "Tokyo Tower",
+        "description": "333m tall communications and observation tower"
+      }
     },
     "shibuya": {
       "coordinates": [139.7013, 35.6580],
       "color": "#3498db",
-      "label": "Shibuya Crossing"
+      "tooltip": "Shibuya Crossing · Shibuya"
     }
   }
 }
 ```
 
-This gives you a dark-themed map centered on Tokyo with a tilted perspective and two markers. Every field is optional — an empty `{}` gives you a light basemap at world view.
+This gives you a dark-themed map centered on Tokyo with a tilted perspective and two markers with icons. Every field is optional — an empty `{}` gives you a light basemap at world view.
 
 ## What's in the Spec
 
-The spec grows incrementally. Here's what's available and what's coming:
-
-**Available now:**
+**Map setup:**
 
 - [Basemap](/docs/basemap) — `light`, `dark`, `streets`, or custom style URL
-- [Viewport](/docs/viewport) — `center`, `zoom`, `pitch`, `bearing`, `bounds`
-- [Markers](/docs/markers) — named pins with colors, labels, and popups
-- [Layers](/docs/layers) — GeoJSON points, lines, polygons with data-driven styling
-- [Color System](/docs/colors) — continuous and categorical data-driven color
+- [Viewport](/docs/viewport) — `center`, `zoom`, `pitch`, `bearing`, `bounds`, `projection`
 
-**Coming soon:**
+**Data:**
 
-- [Controls](/docs/controls) — zoom, compass, scale bar
-- [Widgets](/docs/widgets) — legend, layer toggle, basemap switcher
+- [Markers](/docs/markers) — named pins with colors, icons, labels, tooltips, and popups
+- [Layers](/docs/layers) — GeoJSON points, lines, polygons with data-driven styling and clustering
+- [Routes](/docs/routes) — manual coordinate paths or auto-routed via OSRM/Mapbox
+
+**Overlays:**
+
+- [Controls](/docs/controls) — zoom, compass, fullscreen, locate
+- [Legend](/docs/legend) — auto-generated from layer data-driven styles
+- [Color System](/docs/colors) — continuous and categorical palettes
+
+**React API:**
+
+- [Events](/docs/events) — viewport, marker, and layer callbacks
+- [useMap Hook](/docs/use-map) — access the raw MapLibre instance
+- [Component Slots](/docs/component-slots) — custom Marker, Popup, Tooltip components
+- [Routing Providers](/docs/routing-providers) — pluggable routing (OSRM, Mapbox, custom)

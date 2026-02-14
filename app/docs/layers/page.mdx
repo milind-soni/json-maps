@@ -6,6 +6,8 @@ export const metadata = { title: "Layers" }
 
 Layers render GeoJSON data on the map — points, lines, and polygons with static or data-driven styling.
 
+For route lines, see [Routes](/docs/routes).
+
 ## Basic Usage
 
 ```json
@@ -34,6 +36,8 @@ Layers render GeoJSON data on the map — points, lines, and polygons with stati
 | `data` | `string \| object` | Yes | GeoJSON URL or inline GeoJSON object |
 | `style` | `LayerStyle` | No | Visual style for the layer |
 | `tooltip` | `string[]` | No | Feature property names to show on hover |
+| `cluster` | `boolean` | No | Enable point clustering |
+| `clusterOptions` | `ClusterOptions` | No | Clustering configuration |
 
 ## Style Properties
 
@@ -46,7 +50,7 @@ Layers render GeoJSON data on the map — points, lines, and polygons with stati
 | `pointRadius` | `SizeValue` | `5` | Point circle radius in pixels |
 | `opacity` | `number` | `0.8` | Overall opacity (0–1) |
 
-A `ColorValue` can be a static hex string or a data-driven mapping. See [Color System](/docs/colors) for details.
+A `ColorValue` can be a static hex string or a data-driven mapping. See [Color System](/docs/colors).
 
 A `SizeValue` can be a static number or a data-driven continuous mapping:
 ```json
@@ -60,6 +64,35 @@ A `SizeValue` can be a static number or a data-driven continuous mapping:
 }
 ```
 
+## Clustering
+
+Enable point clustering to group nearby points at lower zoom levels:
+
+```json
+{
+  "layers": {
+    "stores": {
+      "type": "geojson",
+      "data": "https://example.com/stores.geojson",
+      "cluster": true,
+      "clusterOptions": {
+        "radius": 50,
+        "maxZoom": 14,
+        "minPoints": 2,
+        "colors": ["#22c55e", "#eab308", "#ef4444"]
+      }
+    }
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `radius` | `number` | `50` | Cluster radius in pixels |
+| `maxZoom` | `number` | `14` | Max zoom level for clustering |
+| `minPoints` | `number` | `2` | Minimum points per cluster |
+| `colors` | `[string, string, string]` | green/yellow/red | Colors for small/medium/large clusters |
+
 ## Geometry Handling
 
 A single GeoJSON source can contain mixed geometry types. The renderer automatically creates:
@@ -68,20 +101,14 @@ A single GeoJSON source can contain mixed geometry types. The renderer automatic
 - **Line sublayer** for all features (outlines + LineString)
 - **Circle sublayer** for Point / MultiPoint features
 
-You don't need to specify the geometry type — just provide the data and style properties relevant to your data.
-
 ## Data Sources
 
-The `data` field accepts:
-
-**URL string** — fetched by the browser at render time:
+**URL string** — fetched at render time:
 ```json
-{
-  "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
-}
+{ "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson" }
 ```
 
-**Inline GeoJSON object** — embedded directly in the spec:
+**Inline GeoJSON** — embedded in the spec:
 ```json
 {
   "data": {
@@ -99,47 +126,29 @@ The `data` field accepts:
 
 ## Data-Driven Color
 
-Color properties (`fillColor`, `pointColor`, `lineColor`) accept data-driven mappings for choropleth maps and heatmaps.
+See [Color System](/docs/colors) for full documentation. Quick examples:
 
-**Continuous** — map a numeric property to a gradient:
+**Continuous** — numeric property to gradient:
 ```json
-{
-  "fillColor": {
-    "type": "continuous",
-    "attr": "population",
-    "palette": "Sunset",
-    "domain": [0, 1000000]
-  }
-}
+{ "fillColor": { "type": "continuous", "attr": "population", "palette": "Sunset", "domain": [0, 1000000] } }
 ```
 
-**Categorical** — map a string property to discrete colors:
+**Categorical** — string property to discrete colors:
 ```json
-{
-  "fillColor": {
-    "type": "categorical",
-    "attr": "zone_type",
-    "palette": "Bold",
-    "categories": ["residential", "commercial", "industrial"]
-  }
-}
+{ "fillColor": { "type": "categorical", "attr": "zone_type", "palette": "Bold" } }
 ```
 
-## Tooltip
+## Legend
 
-The `tooltip` field is an array of property names from the GeoJSON features. On hover, a tooltip shows the values for those properties.
+When a layer has data-driven color, you can add an auto-generated legend. See [Legend](/docs/legend).
 
-```json
-{
-  "tooltip": ["place", "mag", "time"]
-}
-```
+## Events
 
-## Examples
+Layer clicks fire the `onLayerClick` callback. See [Events](/docs/events).
 
-### Earthquake Map
+## Example
 
-Live USGS earthquake data with magnitude-based coloring — click **code** to see the spec:
+Live USGS earthquake data with magnitude-based coloring:
 
 <LiveExample spec={{
   basemap: "dark",
@@ -163,38 +172,3 @@ Live USGS earthquake data with magnitude-based coloring — click **code** to se
     },
   },
 }} />
-
-### Choropleth
-
-```json
-{
-  "layers": {
-    "states": {
-      "type": "geojson",
-      "data": "https://example.com/us-states.geojson",
-      "style": {
-        "fillColor": {
-          "type": "continuous",
-          "attr": "density",
-          "palette": "Sunset",
-          "domain": [0, 1000]
-        },
-        "lineColor": "#ffffff",
-        "lineWidth": 1,
-        "opacity": 0.7
-      },
-      "tooltip": ["name", "density"]
-    }
-  }
-}
-```
-
-## Streaming Example
-
-When AI generates layers, the entire layer arrives as a single JSONL patch:
-
-```json
-{"op":"add","path":"/layers/quakes","value":{"type":"geojson","data":"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson","style":{"pointColor":{"type":"continuous","attr":"mag","palette":"OrYel","domain":[0,7]},"pointRadius":4,"opacity":0.85},"tooltip":["place","mag","time"]}}
-```
-
-The layer appears on the map as soon as the patch arrives.

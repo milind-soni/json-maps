@@ -1,0 +1,87 @@
+export const metadata = { title: "Routing Providers" }
+
+# Routing Providers
+
+When a route layer uses `from`/`to` instead of `coordinates`, the renderer needs a routing service to fetch real road geometry. By default it uses the public OSRM demo server, but you can swap in any provider.
+
+## Default (OSRM Demo)
+
+No configuration needed — just use `from`/`to` in your route spec:
+
+```tsx
+<MapRenderer spec={spec} />
+```
+
+The default provider calls `router.project-osrm.org`. This is a free demo server — fine for development and prototyping, but not recommended for production.
+
+## Mapbox
+
+```tsx
+import { MapRenderer, mapboxProvider } from "json-maps";
+
+<MapRenderer
+  spec={spec}
+  routingProvider={mapboxProvider("pk.eyJyour-token-here")}
+/>
+```
+
+Supports profiles: `"driving"`, `"walking"`, `"cycling"`, `"driving-traffic"`.
+
+## Self-Hosted OSRM
+
+```tsx
+import { MapRenderer, osrmProvider } from "json-maps";
+
+<MapRenderer
+  spec={spec}
+  routingProvider={osrmProvider("https://my-osrm-server.example.com")}
+/>
+```
+
+## Custom Provider
+
+A routing provider is just a function. Implement your own for any service:
+
+```tsx
+import { MapRenderer, type RoutingProvider } from "json-maps";
+
+const myProvider: RoutingProvider = async ({ from, to, waypoints, profile }) => {
+  const res = await fetch(`https://my-api.com/route`, {
+    method: "POST",
+    body: JSON.stringify({ from, to, waypoints, profile }),
+  });
+  const data = await res.json();
+  return data.coordinates; // must return [lng, lat][]
+};
+
+<MapRenderer spec={spec} routingProvider={myProvider} />
+```
+
+## Type Reference
+
+```tsx
+interface RoutingRequest {
+  from: [number, number];
+  to: [number, number];
+  waypoints?: [number, number][];
+  profile?: string;
+}
+
+type RoutingProvider = (req: RoutingRequest) => Promise<[number, number][]>;
+```
+
+## Built-in Providers
+
+| Provider | Import | Requires |
+|---|---|---|
+| OSRM (demo) | `osrmProvider()` | Nothing (default) |
+| OSRM (custom) | `osrmProvider(url)` | Self-hosted OSRM server |
+| Mapbox | `mapboxProvider(token)` | Mapbox access token |
+
+## Fallback Behavior
+
+If the routing provider fails (network error, service down), the route falls back to a straight line between the from/to points. A warning is logged to the console.
+
+## Note on the Spec
+
+The `routingProvider` is a React prop, not part of the JSON spec. The spec only contains `from`, `to`, `profile`, and `waypoints` — the app developer decides which routing service resolves them.

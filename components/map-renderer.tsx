@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useCallback, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -22,10 +22,30 @@ import {
   resolveBasemapStyle,
 } from "@/lib/spec";
 import { PALETTES } from "@/lib/palettes";
+import { osrmProvider } from "@/lib/routing";
 import { DynamicIcon } from "lucide-react/dynamic";
+
+const defaultRoutingProvider = osrmProvider();
 
 const DEFAULT_CENTER: [number, number] = [0, 20];
 const DEFAULT_ZOOM = 1.5;
+
+/* ------------------------------------------------------------------ */
+/*  Map context (useMap hook)                                          */
+/* ------------------------------------------------------------------ */
+
+interface MapContextValue {
+  map: maplibregl.Map | null;
+  isLoaded: boolean;
+}
+
+const MapContext = createContext<MapContextValue | null>(null);
+
+export function useMap(): MapContextValue {
+  const ctx = useContext(MapContext);
+  if (!ctx) throw new Error("useMap must be used within <MapRenderer>");
+  return ctx;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Color helpers                                                      */
@@ -126,7 +146,7 @@ export function DefaultMarker({ marker, color }: MarkerComponentProps) {
         </div>
       ) : (
         <div
-          className="relative rounded-full transition-transform duration-150 hover:scale-[1.3]"
+          className="relative rounded-full border-2 border-white transition-transform duration-150 hover:scale-[1.3]"
           style={{
             width: size,
             height: size,
@@ -519,11 +539,14 @@ interface MarkerPortals {
 export function MapRenderer({
   spec,
   components,
+  children,
+  routingProvider = defaultRoutingProvider,
   onViewportChange,
   onMarkerClick,
   onMarkerDragStart,
   onMarkerDrag,
   onMarkerDragEnd,
+  onLayerClick,
 }: MapRendererProps) {
   const Marker = components?.Marker ?? DefaultMarker;
   const Popup = components?.Popup ?? DefaultPopup;
@@ -536,8 +559,11 @@ export function MapRenderer({
   const [, setPortalVersion] = useState(0);
 
   // Callback refs — always current, avoids re-registering listeners
-  const callbacksRef = useRef({ onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd });
-  callbacksRef.current = { onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd };
+  const callbacksRef = useRef({ onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick });
+  callbacksRef.current = { onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick };
+
+  // Map load state for useMap hook
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Flag to suppress onViewportChange during programmatic moves (flyTo, fitBounds)
   const internalMoveRef = useRef(false);
@@ -547,6 +573,7 @@ export function MapRenderer({
   const layerSpecsRef = useRef<Record<string, string>>({});
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const layerHandlersRef = useRef<Record<string, Array<{ event: string; layer: string; handler: any }>>>({});
+  const pendingRouteFetchRef = useRef<Set<string>>(new Set());
   const layerTooltipPopupRef = useRef<maplibregl.Popup | null>(null);
   const layerTooltipContainerRef = useRef<HTMLDivElement | null>(null);
   const [layerTooltip, setLayerTooltip] = useState<LayerTooltipData | null>(
@@ -810,9 +837,116 @@ export function MapRenderer({
 
         layerHandlersRef.current[sourceId] = handlers;
       }
+
+      // Click event (for onLayerClick callback) — on all sub-layers
+      {
+        const clickLayers = [
+          `${sourceId}-fill`,
+          `${sourceId}-circle`,
+          `${sourceId}-line`,
+        ];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const clickHandlers: Array<{ event: string; layer: string; handler: any }> = [];
+        for (const subLayer of clickLayers) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const onClick = (e: any) => {
+            callbacksRef.current.onLayerClick?.(id, [e.lngLat.lng, e.lngLat.lat]);
+          };
+          map.on("click", subLayer, onClick);
+          clickHandlers.push({ event: "click", layer: subLayer, handler: onClick });
+        }
+        // Append to existing handlers (tooltip may have already set them)
+        const existing = layerHandlersRef.current[sourceId] ?? [];
+        layerHandlersRef.current[sourceId] = [...existing, ...clickHandlers];
+      }
     } catch (err) {
       console.warn(`[json-maps] Failed to add layer "${id}":`, err);
       try { removeLayer(map, id); } catch { /* ignore */ }
+    }
+  }
+
+  // Keep routing provider in a ref so async callbacks use the latest one
+  const routingProviderRef = useRef(routingProvider);
+  routingProviderRef.current = routingProvider;
+
+  function renderRouteOnMap(
+    map: maplibregl.Map,
+    id: string,
+    layer: RouteLayerSpec,
+    coordinates: [number, number][],
+  ) {
+    const sourceId = `jm-${id}`;
+    const style = layer.style ?? {};
+    const geojsonData = {
+      type: "Feature" as const,
+      properties: {},
+      geometry: { type: "LineString" as const, coordinates },
+    };
+
+    // If source already exists (e.g. OSRM resolved after re-sync), just update data
+    const existing = map.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
+    if (existing) {
+      existing.setData(geojsonData);
+      return;
+    }
+
+    map.addSource(sourceId, {
+      type: "geojson",
+      data: geojsonData,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const paint: any = {
+      "line-color": style.color ?? "#3b82f6",
+      "line-width": style.width ?? 3,
+      "line-opacity": style.opacity ?? 0.8,
+    };
+    if (style.dashed) {
+      paint["line-dasharray"] = [6, 3];
+    }
+
+    map.addLayer({
+      id: `${sourceId}-line`,
+      type: "line",
+      source: sourceId,
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint,
+    });
+
+    const lineLayerId = `${sourceId}-line`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handlers: Array<{ event: string; layer: string; handler: any }> = [];
+
+    // Tooltip on hover
+    if (layer.tooltip) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const onMove = (e: any) => {
+        map.getCanvas().style.cursor = "pointer";
+        setLayerTooltip({ properties: { info: layer.tooltip }, columns: ["info"] });
+        const popup = layerTooltipPopupRef.current;
+        if (popup) popup.setLngLat(e.lngLat).addTo(map);
+      };
+      const onLeave = () => {
+        map.getCanvas().style.cursor = "";
+        setLayerTooltip(null);
+        layerTooltipPopupRef.current?.remove();
+      };
+      map.on("mousemove", lineLayerId, onMove);
+      map.on("mouseleave", lineLayerId, onLeave);
+      handlers.push({ event: "mousemove", layer: lineLayerId, handler: onMove });
+      handlers.push({ event: "mouseleave", layer: lineLayerId, handler: onLeave });
+    }
+
+    // Click event (for onLayerClick callback)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onClick = (e: any) => {
+      callbacksRef.current.onLayerClick?.(id, [e.lngLat.lng, e.lngLat.lat]);
+    };
+    map.on("click", lineLayerId, onClick);
+    handlers.push({ event: "click", layer: lineLayerId, handler: onClick });
+
+    if (handlers.length > 0) {
+      layerHandlersRef.current[sourceId] = handlers;
     }
   }
 
@@ -821,37 +955,33 @@ export function MapRenderer({
     id: string,
     layer: RouteLayerSpec,
   ) {
-    const sourceId = `jm-${id}`;
-
     try {
-      const style = layer.style ?? {};
-
-      map.addSource(sourceId, {
-        type: "geojson",
-        data: {
-          type: "Feature",
-          properties: {},
-          geometry: { type: "LineString", coordinates: layer.coordinates },
-        },
-      });
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const paint: any = {
-        "line-color": style.color ?? "#3b82f6",
-        "line-width": style.width ?? 3,
-        "line-opacity": style.opacity ?? 0.8,
-      };
-      if (style.dashed) {
-        paint["line-dasharray"] = [6, 3];
+      if (layer.from && layer.to) {
+        // Routing provider — fetch then render
+        pendingRouteFetchRef.current.add(id);
+        routingProviderRef.current({
+          from: layer.from,
+          to: layer.to,
+          waypoints: layer.waypoints,
+          profile: layer.profile,
+        })
+          .then((coords: [number, number][]) => {
+            pendingRouteFetchRef.current.delete(id);
+            // Check map still exists (not unmounted during fetch)
+            if (!mapRef.current) return;
+            renderRouteOnMap(map, id, layer, coords);
+          })
+          .catch((err: unknown) => {
+            pendingRouteFetchRef.current.delete(id);
+            console.warn(`[json-maps] Routing failed for "${id}", falling back to straight line:`, err);
+            if (!mapRef.current) return;
+            // Fallback: straight line between from/to
+            const fallback = [layer.from!, ...(layer.waypoints ?? []), layer.to!];
+            renderRouteOnMap(map, id, layer, fallback);
+          });
+      } else if (layer.coordinates) {
+        renderRouteOnMap(map, id, layer, layer.coordinates);
       }
-
-      map.addLayer({
-        id: `${sourceId}-line`,
-        type: "line",
-        source: sourceId,
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint,
-      });
     } catch (err) {
       console.warn(`[json-maps] Failed to add route "${id}":`, err);
       try { removeLayer(map, id); } catch { /* ignore */ }
@@ -957,7 +1087,8 @@ export function MapRenderer({
       const serialized = JSON.stringify(layerSpec);
       const sourceExists = !!map.getSource(`jm-${id}`);
 
-      if (prevSpecs[id] === serialized && sourceExists) continue;
+      // Skip if spec unchanged and source exists (or OSRM fetch is in-flight)
+      if (prevSpecs[id] === serialized && (sourceExists || pendingRouteFetchRef.current.has(id))) continue;
 
       if (sourceExists) {
         removeLayer(map, id);
@@ -1019,6 +1150,7 @@ export function MapRenderer({
 
     // Sync layers after initial style load (addSource/addLayer need style ready)
     map.on("load", () => {
+      setIsLoaded(true);
       if (spec.bounds) {
         map.fitBounds(spec.bounds as [number, number, number, number], {
           padding: 40,
@@ -1163,9 +1295,10 @@ export function MapRenderer({
   /* ---- Render portals ---- */
 
   const entries = Array.from(portalsRef.current.entries());
+  const contextValue = useMemo(() => ({ map: mapRef.current, isLoaded }), [isLoaded]);
 
   return (
-    <>
+    <MapContext.Provider value={contextValue}>
       <div ref={containerRef} className="relative w-full h-full">
         {spec.controls && (
           <MapControls
@@ -1182,6 +1315,7 @@ export function MapRenderer({
               <MapLegend key={id} legendSpec={leg} layerSpec={geoLayer} dark={spec.basemap === "dark"} />
             );
           })}
+        {children}
       </div>
       {/* Marker portals */}
       {entries.map(([id, p]) => {
@@ -1218,6 +1352,6 @@ export function MapRenderer({
           />,
           layerTooltipContainerRef.current,
         )}
-    </>
+    </MapContext.Provider>
   );
 }
