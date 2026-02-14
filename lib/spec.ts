@@ -12,6 +12,7 @@ export interface MarkerSpec {
   tooltip?: string;
   popup?: string | PopupSpec;
   draggable?: boolean;
+  glow?: boolean;
 }
 
 /* ---- Color system ---- */
@@ -120,10 +121,60 @@ export interface MapSpec {
   pitch?: number;
   bearing?: number;
   bounds?: [number, number, number, number];
+  projection?: "mercator" | "globe";
   markers?: Record<string, MarkerSpec>;
   layers?: Record<string, LayerSpec>;
   controls?: ControlsSpec;
   legend?: Record<string, LegendSpec>;
+}
+
+/* ---- Viewport & renderer props ---- */
+
+export interface MapViewport {
+  center: [number, number];
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+
+/* ---- Component slots ---- */
+
+export interface MarkerComponentProps {
+  id: string;
+  marker: MarkerSpec;
+  color: string;
+}
+
+export interface PopupComponentProps {
+  id: string;
+  marker: MarkerSpec;
+}
+
+export interface TooltipComponentProps {
+  id: string;
+  text: string;
+}
+
+export interface LayerTooltipComponentProps {
+  properties: Record<string, unknown>;
+  columns: string[];
+}
+
+export interface MapComponents {
+  Marker: React.ComponentType<MarkerComponentProps>;
+  Popup: React.ComponentType<PopupComponentProps>;
+  Tooltip: React.ComponentType<TooltipComponentProps>;
+  LayerTooltip: React.ComponentType<LayerTooltipComponentProps>;
+}
+
+export interface MapRendererProps {
+  spec: MapSpec;
+  components?: Partial<MapComponents>;
+  onViewportChange?: (viewport: MapViewport) => void;
+  onMarkerClick?: (markerId: string, coordinates: [number, number]) => void;
+  onMarkerDragStart?: (markerId: string, coordinates: [number, number]) => void;
+  onMarkerDrag?: (markerId: string, coordinates: [number, number]) => void;
+  onMarkerDragEnd?: (markerId: string, coordinates: [number, number]) => void;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {

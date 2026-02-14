@@ -5,8 +5,12 @@ import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
-  type MapSpec,
+  type MapRendererProps,
   type MarkerSpec,
+  type MarkerComponentProps,
+  type PopupComponentProps,
+  type TooltipComponentProps,
+  type LayerTooltipComponentProps,
   type GeoJsonLayerSpec,
   type RouteLayerSpec,
   type ControlsSpec,
@@ -77,27 +81,68 @@ function sizeValueToExpression(size: SizeValue, fallback: number): any {
 /*  Portal content components                                          */
 /* ------------------------------------------------------------------ */
 
-function MarkerDot({ color, icon, label }: { color: string; icon?: string; label?: string }) {
+export function DefaultMarker({ marker, color }: MarkerComponentProps) {
+  const { icon, label, glow } = marker;
+  const size = icon ? 28 : 16;
+
   return (
-    <>
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      {/* Glow rings — mapcn pattern: flex-centered absolute rings, no transform needed */}
+      {glow && (
+        <>
+          <div
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: size * 2.5,
+              height: size * 2.5,
+              background: color,
+              opacity: 0.15,
+            }}
+          />
+          <div
+            className="absolute rounded-full pointer-events-none animate-ping"
+            style={{
+              width: size * 1.5,
+              height: size * 1.5,
+              background: color,
+              opacity: 0.3,
+              animationDuration: "2s",
+            }}
+          />
+        </>
+      )}
       {icon ? (
         <div
-          className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-lg transition-transform duration-150 hover:scale-[1.15]"
-          style={{ background: color }}
+          className="relative flex items-center justify-center w-7 h-7 rounded-full transition-transform duration-150 hover:scale-[1.15]"
+          style={{
+            background: color,
+            boxShadow: glow
+              ? `0 0 12px ${color}80, 0 0 4px ${color}40`
+              : "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+          }}
         >
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           <DynamicIcon name={icon as any} size={16} color="#ffffff" strokeWidth={2.5} />
         </div>
       ) : (
         <div
-          className="h-4 w-4 rounded-full border-2 border-white shadow-lg transition-transform duration-150 hover:scale-[1.3]"
-          style={{ background: color }}
+          className="relative rounded-full transition-transform duration-150 hover:scale-[1.3]"
+          style={{
+            width: size,
+            height: size,
+            background: color,
+            boxShadow: glow
+              ? `0 0 10px ${color}80, 0 0 4px ${color}40`
+              : "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+          }}
         />
       )}
       {label && (
         <div
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap text-[10px] font-medium pointer-events-none"
+          className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-medium pointer-events-none"
           style={{
+            top: "100%",
+            marginTop: 4,
             textShadow:
               "0 0 4px rgba(255,255,255,0.9), 0 0 4px rgba(255,255,255,0.9)",
           }}
@@ -105,21 +150,21 @@ function MarkerDot({ color, icon, label }: { color: string; icon?: string; label
           {label}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
-function PopupContent({ markerSpec }: { markerSpec: MarkerSpec }) {
-  const popup = markerSpec.popup;
+export function DefaultPopup({ marker }: PopupComponentProps) {
+  const popup = marker.popup;
   if (!popup) return null;
 
   const isRich = typeof popup === "object";
-  const title = isRich ? popup.title : markerSpec.label;
+  const title = isRich ? popup.title : marker.label;
   const description = isRich ? popup.description : popup;
   const image = isRich ? popup.image : undefined;
 
   return (
-    <div className="relative rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden max-w-[260px]">
+    <div className="relative rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden max-w-[260px] animate-in fade-in-0 zoom-in-95">
       {image && (
         <div className="h-32 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -144,9 +189,9 @@ function PopupContent({ markerSpec }: { markerSpec: MarkerSpec }) {
   );
 }
 
-function TooltipContent({ text }: { text: string }) {
+export function DefaultTooltip({ text }: TooltipComponentProps) {
   return (
-    <div className="rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-md whitespace-nowrap">
+    <div className="rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95">
       {text}
     </div>
   );
@@ -157,7 +202,7 @@ interface LayerTooltipData {
   columns: string[];
 }
 
-function LayerTooltipContent({ properties, columns }: LayerTooltipData) {
+export function DefaultLayerTooltip({ properties, columns }: LayerTooltipComponentProps) {
   return (
     <div className="rounded-md border border-border bg-popover text-popover-foreground shadow-md px-3 py-2 max-w-[280px]">
       <div className="space-y-0.5">
@@ -471,12 +516,31 @@ interface MarkerPortals {
 /*  MapRenderer                                                        */
 /* ------------------------------------------------------------------ */
 
-export function MapRenderer({ spec }: { spec: MapSpec }) {
+export function MapRenderer({
+  spec,
+  components,
+  onViewportChange,
+  onMarkerClick,
+  onMarkerDragStart,
+  onMarkerDrag,
+  onMarkerDragEnd,
+}: MapRendererProps) {
+  const Marker = components?.Marker ?? DefaultMarker;
+  const Popup = components?.Popup ?? DefaultPopup;
+  const Tooltip = components?.Tooltip ?? DefaultTooltip;
+  const LayerTooltip = components?.LayerTooltip ?? DefaultLayerTooltip;
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const portalsRef = useRef<Map<string, MarkerPortals>>(new Map());
   const [, setPortalVersion] = useState(0);
+
+  // Callback refs — always current, avoids re-registering listeners
+  const callbacksRef = useRef({ onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd });
+  callbacksRef.current = { onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd };
+
+  // Flag to suppress onViewportChange during programmatic moves (flyTo, fitBounds)
+  const internalMoveRef = useRef(false);
 
   // Layer tracking
   const pendingLayerSyncRef = useRef(false);
@@ -496,11 +560,11 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     const hasIcon = !!ms.icon;
 
     const el = document.createElement("div");
-    el.style.cssText = hasIcon
-      ? "width:28px;height:28px;cursor:pointer;"
-      : "width:16px;height:16px;cursor:pointer;";
+    const baseSize = hasIcon ? 28 : 16;
+    el.style.cssText = `width:${baseSize}px;height:${baseSize}px;cursor:pointer;overflow:visible;`;
     el.dataset.color = color;
     if (ms.icon) el.dataset.icon = ms.icon;
+    if (ms.glow) el.dataset.glow = "1";
 
     const marker = new maplibregl.Marker({
       element: el,
@@ -509,6 +573,27 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
     })
       .setLngLat(ms.coordinates)
       .addTo(map);
+
+    // Marker click event
+    el.addEventListener("click", () => {
+      callbacksRef.current.onMarkerClick?.(id, ms.coordinates);
+    });
+
+    // Drag events (only if draggable)
+    if (ms.draggable) {
+      marker.on("dragstart", () => {
+        const ll = marker.getLngLat();
+        callbacksRef.current.onMarkerDragStart?.(id, [ll.lng, ll.lat]);
+      });
+      marker.on("drag", () => {
+        const ll = marker.getLngLat();
+        callbacksRef.current.onMarkerDrag?.(id, [ll.lng, ll.lat]);
+      });
+      marker.on("dragend", () => {
+        const ll = marker.getLngLat();
+        callbacksRef.current.onMarkerDragEnd?.(id, [ll.lng, ll.lat]);
+      });
+    }
 
     const portals: MarkerPortals = { markerEl: el };
 
@@ -819,7 +904,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       if (existing) {
         existing.setLngLat(ms.coordinates);
         const el = existing.getElement();
-        if (el.dataset.color !== (ms.color ?? "") || el.dataset.icon !== (ms.icon ?? "")) {
+        if (el.dataset.color !== (ms.color ?? "") || el.dataset.icon !== (ms.icon ?? "") || el.dataset.glow !== (ms.glow ? "1" : undefined)) {
           removeMarker(id);
           addMarker(map, id, ms);
         }
@@ -910,6 +995,28 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       attributionControl: false,
     });
 
+    // Apply globe projection if specified
+    if (spec.projection === "globe") {
+      map.setProjection({ type: "globe" });
+    }
+
+    // Inject CSS to strip default MapLibre popup chrome
+    const styleEl = document.createElement("style");
+    styleEl.textContent = `.maplibregl-popup-content{background:transparent!important;box-shadow:none!important;padding:0!important;border-radius:0!important}.maplibregl-popup-tip{display:none!important}`;
+    containerRef.current.appendChild(styleEl);
+
+    // Viewport change callback — fires on user-initiated moves only
+    map.on("moveend", () => {
+      if (internalMoveRef.current) return;
+      const c = map.getCenter();
+      callbacksRef.current.onViewportChange?.({
+        center: [c.lng, c.lat],
+        zoom: map.getZoom(),
+        pitch: map.getPitch(),
+        bearing: map.getBearing(),
+      });
+    });
+
     // Sync layers after initial style load (addSource/addLayer need style ready)
     map.on("load", () => {
       if (spec.bounds) {
@@ -943,6 +1050,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       layerTooltipPopupRef.current = null;
       layerTooltipContainerRef.current = null;
       layerSpecsRef.current = {};
+      styleEl.remove();
       map.remove();
       mapRef.current = null;
     };
@@ -971,13 +1079,19 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
 
   // Update viewport
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Suppress onViewportChange for programmatic moves
+    internalMoveRef.current = true;
+    const resetFlag = () => { internalMoveRef.current = false; };
 
     if (spec.bounds) {
-      mapRef.current.fitBounds(
+      map.fitBounds(
         spec.bounds as [number, number, number, number],
         { padding: 40 },
       );
+      map.once("moveend", resetFlag);
       return;
     }
 
@@ -1002,20 +1116,39 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
         south = midLat - MIN_SPAN / 2;
         north = midLat + MIN_SPAN / 2;
       }
-      mapRef.current.fitBounds([west, south, east, north], {
+      map.fitBounds([west, south, east, north], {
         padding: { top: 100, bottom: 100, left: 100, right: 100 },
         maxZoom: 15,
       });
+      map.once("moveend", resetFlag);
       return;
     }
 
-    mapRef.current.flyTo({
+    map.flyTo({
       center: spec.center ?? DEFAULT_CENTER,
       zoom: spec.zoom ?? DEFAULT_ZOOM,
       pitch: spec.pitch ?? 0,
       bearing: spec.bearing ?? 0,
     });
+    map.once("moveend", resetFlag);
   }, [spec.center, spec.zoom, spec.pitch, spec.bearing, spec.bounds, spec.markers]);
+
+  // Update projection reactively (skip on mount — init effect handles it)
+  const prevProjectionRef = useRef(spec.projection);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (prevProjectionRef.current === spec.projection) return;
+    prevProjectionRef.current = spec.projection;
+    const apply = () => {
+      map.setProjection({ type: spec.projection === "globe" ? "globe" : "mercator" });
+    };
+    if (map.isStyleLoaded()) {
+      apply();
+    } else {
+      map.once("styledata", apply);
+    }
+  }, [spec.projection]);
 
   // Sync markers
   useEffect(() => {
@@ -1057,19 +1190,19 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
         return (
           <Fragment key={id}>
             {createPortal(
-              <MarkerDot color={ms.color || "#3b82f6"} icon={ms.icon} label={ms.label} />,
+              <Marker id={id} marker={ms} color={ms.color || "#3b82f6"} />,
               p.markerEl,
             )}
             {p.popupContainer &&
               ms.popup &&
               createPortal(
-                <PopupContent markerSpec={ms} />,
+                <Popup id={id} marker={ms} />,
                 p.popupContainer,
               )}
             {p.tooltipContainer &&
               ms.tooltip &&
               createPortal(
-                <TooltipContent text={ms.tooltip} />,
+                <Tooltip id={id} text={ms.tooltip} />,
                 p.tooltipContainer,
               )}
           </Fragment>
@@ -1079,7 +1212,7 @@ export function MapRenderer({ spec }: { spec: MapSpec }) {
       {layerTooltipContainerRef.current &&
         layerTooltip &&
         createPortal(
-          <LayerTooltipContent
+          <LayerTooltip
             properties={layerTooltip.properties}
             columns={layerTooltip.columns}
           />,

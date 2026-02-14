@@ -37,6 +37,7 @@ const MARKER_FIELDS: Record<string, FieldDef> = {
     },
   },
   draggable: { description: "boolean" },
+  glow: { description: "boolean — adds colored pulse ring and glow shadow" },
 };
 
 const LAYER_STYLE_FIELDS: Record<string, FieldDef> = {
@@ -103,6 +104,10 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
   bearing: { description: "number (-180 to 180, rotation in degrees)" },
   bounds: {
     description: "[west, south, east, north] — fit map to these bounds",
+  },
+  projection: {
+    description:
+      '"mercator" | "globe" — map projection (default "mercator", "globe" shows 3D sphere at low zoom)',
   },
   markers: {
     description: "named map of markers, each with:",
@@ -212,7 +217,7 @@ const BASE_RULES = [
   "For city-level views use zoom 10-13, neighborhood zoom 14-16, street zoom 17-19.",
   'For markers, use "/markers/<id>" for individual markers.',
   'Give markers descriptive ids like "eiffel-tower", "central-park", etc.',
-  "When adding markers for landmarks, include a label, a tooltip for hover, and a rich popup object with title and description.",
+  "When adding markers for landmarks, include a tooltip for hover and a rich popup object with title and description. Only add a label if the user explicitly asks for permanent text below markers.",
   "Use varied colors for different markers to make them distinguishable.",
   'When markers represent specific categories (restaurants, hotels, parks, etc.), use the icon field with a relevant lucide icon name (kebab-case). For generic location pins, omit icon to use the default dot.',
   'For layers, use "/layers/<id>" to add GeoJSON layers. Use well-known public GeoJSON URLs when possible.',
@@ -245,9 +250,9 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/center","value":[139.75,35.68]}
 {"op":"replace","path":"/zoom","value":11}
 {"op":"replace","path":"/pitch","value":45}
-{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","icon":"tower-control","label":"Tokyo Tower","tooltip":"Observation tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
-{"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","label":"Shibuya Crossing","tooltip":"Iconic scramble crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World's busiest pedestrian crossing with up to 3,000 people per light change"}}}
-{"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","icon":"church","label":"Senso-ji","tooltip":"Buddhist temple · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}`,
+{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","icon":"tower-control","tooltip":"Tokyo Tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
+{"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","tooltip":"Shibuya Crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World's busiest pedestrian crossing with up to 3,000 people per light change"}}}
+{"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","icon":"church","tooltip":"Senso-ji · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}`,
   },
   {
     prompt: "Show recent earthquakes",

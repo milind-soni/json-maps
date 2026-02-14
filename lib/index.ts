@@ -1,7 +1,14 @@
-export { MapRenderer } from "../components/map-renderer";
+export { MapRenderer, DefaultMarker, DefaultPopup, DefaultTooltip, DefaultLayerTooltip } from "../components/map-renderer";
 
 export type {
   MapSpec,
+  MapViewport,
+  MapRendererProps,
+  MapComponents,
+  MarkerComponentProps,
+  PopupComponentProps,
+  TooltipComponentProps,
+  LayerTooltipComponentProps,
   MarkerSpec,
   PopupSpec,
   GeoJsonLayerSpec,

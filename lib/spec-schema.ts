@@ -19,6 +19,7 @@ const MarkerSchema = z.object({
   tooltip: z.string().optional(),
   popup: z.union([z.string(), PopupSchema]).optional(),
   draggable: z.boolean().optional(),
+  glow: z.boolean().optional(),
 });
 
 /* ---- Color system ---- */
@@ -131,6 +132,7 @@ export const MapSpecSchema = z.object({
   pitch: z.number().min(0).max(85).optional(),
   bearing: z.number().optional(),
   bounds: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(),
+  projection: z.enum(["mercator", "globe"]).optional(),
   markers: z.record(z.string(), MarkerSchema).optional(),
   layers: z.record(z.string(), LayerSchema).optional(),
   controls: ControlsSchema.optional(),
