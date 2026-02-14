@@ -111,7 +111,19 @@ const RouteLayerSchema = z.object({
   { message: "Route must have either coordinates (min 2 points) or from+to" },
 );
 
-const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema]);
+const HeatmapLayerSchema = z.object({
+  type: z.literal("heatmap"),
+  data: z.union([z.string(), z.record(z.string(), z.unknown())]),
+  weight: z.string().optional(),
+  radius: z.number().min(1).optional(),
+  intensity: z.number().min(0).optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  palette: z.string().refine((v) => paletteNames.includes(v), {
+    message: `palette must be one of: ${paletteNames.join(", ")}`,
+  }).optional(),
+});
+
+const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema]);
 
 /* ---- Legend ---- */
 

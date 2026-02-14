@@ -1,0 +1,87 @@
+export const metadata = { title: "Heatmap" }
+
+# Heatmap
+
+Heatmap layers visualize point density as a smooth gradient. Great for showing concentrations in large datasets — earthquakes, crime reports, traffic incidents.
+
+## Usage
+
+```json
+{
+  "layers": {
+    "quake-heat": {
+      "type": "heatmap",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "weight": "mag",
+      "radius": 25,
+      "intensity": 1.5,
+      "palette": "Sunset"
+    }
+  }
+}
+```
+
+## Properties
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `type` | `"heatmap"` | — | Required |
+| `data` | `string \| object` | — | GeoJSON URL or inline GeoJSON (must contain Point features) |
+| `weight` | `string` | equal weight | Feature property to use as point weight (e.g. `"mag"`) |
+| `radius` | `number` | `30` | Pixel radius of influence per point |
+| `intensity` | `number` | `1` | Intensity multiplier — increase for sparse data |
+| `opacity` | `number` | `0.8` | Layer opacity (0–1) |
+| `palette` | `string` | `"OrYel"` | CartoColor palette for the color ramp |
+
+## Weight
+
+The `weight` property maps a numeric feature attribute to the heatmap intensity. Points with higher values contribute more to the density.
+
+```json
+{
+  "type": "heatmap",
+  "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+  "weight": "mag"
+}
+```
+
+Without `weight`, all points contribute equally.
+
+## Radius and Intensity
+
+- **`radius`** — how far each point's influence spreads in pixels. Larger values produce smoother, more blurred results.
+- **`intensity`** — a multiplier on the density calculation. Increase this for sparse datasets to make the heatmap more visible.
+
+```json
+{
+  "type": "heatmap",
+  "data": "https://example.com/incidents.geojson",
+  "radius": 40,
+  "intensity": 2
+}
+```
+
+## Palette
+
+Any CartoColor sequential palette works well. Good choices for heatmaps:
+
+- `"OrYel"` (default) — orange to yellow
+- `"Sunset"` — blue through red to yellow
+- `"Burg"` — light to dark burgundy
+- `"RedOr"` — red to orange
+- `"Teal"` — light to dark teal
+
+```json
+{
+  "type": "heatmap",
+  "data": "https://example.com/points.geojson",
+  "palette": "Burg"
+}
+```
+
+## Tips
+
+- Heatmaps work best with Point geometry. Polygons and lines are ignored.
+- Use `weight` for meaningful density (e.g. earthquake magnitude, crime severity).
+- Increase `intensity` when your data is sparse — the default of 1 works well for datasets with thousands of points.
+- Heatmaps look best on dark basemaps.

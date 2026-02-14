@@ -13,6 +13,7 @@ import {
   type LayerTooltipComponentProps,
   type GeoJsonLayerSpec,
   type RouteLayerSpec,
+  type HeatmapLayerSpec,
   type ControlsSpec,
   type LegendSpec,
   type ColorValue,
@@ -950,6 +951,59 @@ export function MapRenderer({
     }
   }
 
+  function addHeatmapLayer(
+    map: maplibregl.Map,
+    id: string,
+    layer: HeatmapLayerSpec,
+  ) {
+    const sourceId = `jm-${id}`;
+
+    try {
+      map.addSource(sourceId, {
+        type: "geojson",
+        data: layer.data as string | GeoJSON.GeoJSON,
+      });
+
+      // Build heatmap-color ramp from palette
+      const palette = PALETTES[layer.palette ?? "OrYel"] ?? PALETTES["OrYel"];
+      const steps = palette.length;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const colorRamp: any[] = [
+        "interpolate",
+        ["linear"],
+        ["heatmap-density"],
+        0, "rgba(0,0,0,0)",
+      ];
+      for (let i = 0; i < steps; i++) {
+        colorRamp.push((i + 1) / steps);
+        colorRamp.push(palette[i]);
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const paint: Record<string, any> = {
+        "heatmap-radius": layer.radius ?? 30,
+        "heatmap-intensity": layer.intensity ?? 1,
+        "heatmap-opacity": layer.opacity ?? 0.8,
+        "heatmap-color": colorRamp,
+      };
+
+      // Data-driven weight from a feature property
+      if (layer.weight) {
+        paint["heatmap-weight"] = ["get", layer.weight];
+      }
+
+      map.addLayer({
+        id: `${sourceId}-heatmap`,
+        type: "heatmap",
+        source: sourceId,
+        paint,
+      });
+    } catch (err) {
+      console.warn(`[json-maps] Failed to add heatmap "${id}":`, err);
+      try { removeLayer(map, id); } catch { /* ignore */ }
+    }
+  }
+
   function addRouteLayer(
     map: maplibregl.Map,
     id: string,
@@ -1009,6 +1063,7 @@ export function MapRenderer({
       `${sourceId}-circle`,
       `${sourceId}-line`,
       `${sourceId}-fill`,
+      `${sourceId}-heatmap`,
     ];
     for (const layerId of subLayers) {
       if (map.getLayer(layerId)) map.removeLayer(layerId);
@@ -1096,6 +1151,8 @@ export function MapRenderer({
 
       if (layerSpec.type === "route") {
         addRouteLayer(map, id, layerSpec);
+      } else if (layerSpec.type === "heatmap") {
+        addHeatmapLayer(map, id, layerSpec);
       } else {
         addGeoJsonLayer(map, id, layerSpec);
       }

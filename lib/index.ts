@@ -13,6 +13,7 @@ export type {
   PopupSpec,
   GeoJsonLayerSpec,
   RouteLayerSpec,
+  HeatmapLayerSpec,
   RouteProfile,
   RouteStyle,
   LayerSpec,

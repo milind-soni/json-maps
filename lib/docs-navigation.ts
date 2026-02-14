@@ -26,6 +26,7 @@ export const docsNavigation: NavSection[] = [
       { title: "Markers", href: "/docs/markers" },
       { title: "Layers", href: "/docs/layers" },
       { title: "Routes", href: "/docs/routes" },
+      { title: "Heatmap", href: "/docs/heatmap" },
       { title: "Controls", href: "/docs/controls" },
       { title: "Legend", href: "/docs/legend" },
     ],

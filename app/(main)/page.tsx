@@ -24,9 +24,9 @@ export default function Home() {
 
         <div className="flex items-center justify-center gap-2 border border-border rounded px-4 py-3 mt-12 mx-auto w-fit">
           <code className="text-sm bg-transparent">
-            npm install @json-maps/react
+            npm install json-maps
           </code>
-          <CopyButton text="npm install @json-maps/react" />
+          <CopyButton text="npm install json-maps" />
         </div>
 
         <div className="flex gap-3 justify-center mt-6">
@@ -100,21 +100,22 @@ export default function Home() {
                 Viewport, markers, routes, layers, controls &mdash; all as JSON.
               </p>
               <Code lang="json">{`{
-  "viewport": {
-    "center": [-73.98, 40.75],
-    "zoom": 12
-  },
+  "center": [-73.98, 40.75],
+  "zoom": 12,
   "layers": {
     "cafes": {
-      "type": "cluster",
+      "type": "geojson",
       "data": "https://data.city/cafes.geojson",
-      "radius": 50,
-      "colors": ["#22c55e", "#eab308", "#ef4444"]
+      "cluster": true,
+      "clusterOptions": {
+        "radius": 50,
+        "colors": ["#22c55e", "#eab308", "#ef4444"]
+      }
     }
   },
   "markers": {
     "home": {
-      "position": [-73.98, 40.75],
+      "coordinates": [-73.98, 40.75],
       "label": "Home",
       "popup": { "title": "My Location" }
     }
@@ -130,20 +131,21 @@ export default function Home() {
               <p className="text-muted-foreground mb-6">
                 One component. One spec. Interactive map.
               </p>
-              <Code lang="tsx">{`import { MapRenderer } from "@json-maps/react";
+              <Code lang="tsx">{`import { MapRenderer } from "json-maps";
 
 const spec = {
-  viewport: { center: [-73.98, 40.75], zoom: 12 },
+  center: [-73.98, 40.75],
+  zoom: 12,
   layers: {
     cafes: {
-      type: "cluster",
+      type: "geojson",
       data: "https://data.city/cafes.geojson",
-      radius: 50,
+      cluster: true,
     },
   },
   markers: {
     home: {
-      position: [-73.98, 40.75],
+      coordinates: [-73.98, 40.75],
       label: "Home",
     },
   },
@@ -173,20 +175,25 @@ export default function MyMap() {
               <Code lang="json">{`{
   "layers": {
     "population": {
-      "type": "fill",
+      "type": "geojson",
       "data": "https://data.gov/states.geojson",
-      "color": {
-        "property": "population",
-        "palette": "viridis",
-        "domain": [0, 40000000]
+      "style": {
+        "fillColor": {
+          "type": "continuous",
+          "attr": "population",
+          "palette": "Sunset",
+          "domain": [0, 40000000]
+        },
+        "opacity": 0.7
       },
-      "opacity": 0.7,
       "tooltip": ["name", "population"]
     }
   },
   "legend": {
-    "layer": "population",
-    "title": "Population by State"
+    "pop": {
+      "layer": "population",
+      "title": "Population"
+    }
   }
 }`}</Code>
             </div>
@@ -195,31 +202,26 @@ export default function MyMap() {
                 Actions &amp; interactions
               </h2>
               <p className="text-muted-foreground mb-6">
-                flyTo, fitBounds, toggleLayer, geocode &mdash; declarative map
-                interactions from the spec.
+                React callbacks for marker clicks, drags, viewport changes,
+                and layer clicks. Full control over interactions.
               </p>
-              <Code lang="json">{`{
-  "markers": {
-    "office": {
-      "position": [-122.41, 37.77],
-      "label": "SF Office",
-      "on": {
-        "click": {
-          "action": "flyTo",
-          "params": {
-            "center": [-122.41, 37.77],
-            "zoom": 16,
-            "pitch": 45
-          }
-        }
-      }
-    }
-  },
-  "state": {
-    "activeLayer": "traffic",
-    "selectedFeature": null
-  }
-}`}</Code>
+              <Code lang="tsx">{`import { MapRenderer } from "json-maps";
+
+<MapRenderer
+  spec={spec}
+  onMarkerClick={(id, coords) => {
+    console.log("Clicked:", id, coords);
+  }}
+  onViewportChange={(viewport) => {
+    setSpec(prev => ({ ...prev, ...viewport }));
+  }}
+  onMarkerDragEnd={(id, coords) => {
+    updateMarkerPosition(id, coords);
+  }}
+  onLayerClick={(layerId, coords) => {
+    showFeatureDetails(layerId, coords);
+  }}
+/>`}</Code>
             </div>
           </div>
         </div>
@@ -253,7 +255,7 @@ export default function MyMap() {
               },
               {
                 title: "Interactions",
-                desc: "flyTo, fitBounds, toggleLayer, geocode, highlight. All declarative, all from the spec.",
+                desc: "Marker click, drag, viewport change, and layer click callbacks. Controlled viewport with onViewportChange.",
               },
             ].map((feature) => (
               <div key={feature.title}>
@@ -271,9 +273,9 @@ export default function MyMap() {
           <h2 className="text-2xl font-semibold mb-4">Get started</h2>
           <div className="flex items-center justify-center gap-2 border border-border rounded px-4 py-3 mb-8 mx-auto w-fit">
             <code className="text-sm bg-transparent">
-              npm install @json-maps/react
+              npm install json-maps
             </code>
-            <CopyButton text="npm install @json-maps/react" />
+            <CopyButton text="npm install json-maps" />
           </div>
           <div>
             <Button asChild>

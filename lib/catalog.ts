@@ -59,7 +59,7 @@ const LAYER_STYLE_FIELDS: Record<string, FieldDef> = {
 };
 
 const LAYER_FIELDS: Record<string, FieldDef> = {
-  type: { description: '"geojson" or "route" (required)' },
+  type: { description: '"geojson", "route", or "heatmap" (required)' },
   data: {
     description:
       '(geojson only) URL string to a GeoJSON file OR inline GeoJSON object',
@@ -91,6 +91,20 @@ const LAYER_FIELDS: Record<string, FieldDef> = {
   tooltip: {
     description:
       'geojson: array of property names to show on hover, e.g. ["name", "population"]. route: string shown on hover, e.g. "Walking route · 2.5 km"',
+  },
+  weight: {
+    description:
+      '(heatmap only) feature property name to use as point weight (e.g. "mag"). If omitted, all points have equal weight.',
+  },
+  radius: {
+    description: "(heatmap only) pixel radius of influence per point (default 30)",
+  },
+  intensity: {
+    description: "(heatmap only) intensity multiplier (default 1). Increase for sparse data.",
+  },
+  palette: {
+    description:
+      '(heatmap only) CartoColor palette for the color ramp (default "OrYel"). Good choices: OrYel, Sunset, Burg, RedOr, Teal.',
   },
   cluster: {
     description: "(geojson only) boolean — enable point clustering (default false)",
@@ -242,6 +256,7 @@ const BASE_RULES = [
   'When adding controls, use "/controls" path. Default shows zoom + compass at top-right. Only add controls when user requests interactive UI elements.',
   'For routes, use type "route" with EITHER a coordinates array of [lng, lat] pairs for manual paths, OR from/to fields for OSRM auto-routing that follows real roads. Use profile "driving", "walking", or "cycling" (default "driving"). Add waypoints array for intermediate stops. Optional style (color, width, opacity, dashed).',
   "When the user asks for clustering, set cluster: true on the geojson layer. Optionally include clusterOptions for radius, maxZoom, colors.",
+  'For heatmaps, use type "heatmap" with a GeoJSON data source of Point features. Set weight to a numeric property for weighted density (e.g. "mag" for earthquake magnitude). Adjust radius (default 30) and intensity (default 1) for visual density. Use a sequential palette like OrYel, Sunset, or Burg.',
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
 ];
 
@@ -284,6 +299,13 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"add","path":"/markers/times-square","value":{"coordinates":[-73.9855,40.7580],"color":"#e74c3c","icon":"star","tooltip":"Times Square","popup":{"title":"Times Square","description":"The iconic intersection and entertainment hub of Midtown Manhattan"}}}
 {"op":"add","path":"/markers/central-park","value":{"coordinates":[-73.9654,40.7829],"color":"#22c55e","icon":"tree-pine","tooltip":"Central Park","popup":{"title":"Central Park","description":"843-acre urban park in the heart of Manhattan"}}}
 {"op":"add","path":"/layers/driving-route","value":{"type":"route","from":[-73.9855,40.7580],"to":[-73.9654,40.7829],"profile":"driving","style":{"color":"#3b82f6","width":4},"tooltip":"Driving route · Times Square → Central Park"}}`,
+  },
+  {
+    prompt: "Show earthquake heatmap",
+    output: `{"op":"replace","path":"/basemap","value":"dark"}
+{"op":"replace","path":"/center","value":[-120,37]}
+{"op":"replace","path":"/zoom","value":3}
+{"op":"add","path":"/layers/quake-heat","value":{"type":"heatmap","data":"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson","weight":"mag","radius":25,"intensity":1.5,"palette":"Sunset"}}`,
   },
 ];
 

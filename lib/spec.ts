@@ -100,7 +100,22 @@ export interface RouteLayerSpec {
   tooltip?: string;
 }
 
-export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec;
+export interface HeatmapLayerSpec {
+  type: "heatmap";
+  data: string | Record<string, unknown>;
+  /** Feature property to use as weight (default: equal weight) */
+  weight?: string;
+  /** Pixel radius of influence per point (default: 30) */
+  radius?: number;
+  /** Intensity multiplier (default: 1) */
+  intensity?: number;
+  /** Opacity 0-1 (default: 0.8) */
+  opacity?: number;
+  /** CartoColor palette for the color ramp (default: "OrYel") */
+  palette?: string;
+}
+
+export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec;
 
 /* ---- Controls ---- */
 
