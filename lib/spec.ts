@@ -14,7 +14,6 @@ export interface MarkerSpec {
   tooltip?: string;
   popup?: string | PopupSpec;
   draggable?: boolean;
-  glow?: boolean;
 }
 
 /* ---- Color system ---- */
@@ -70,7 +69,7 @@ export interface GeoJsonLayerSpec {
   type: "geojson";
   data: string | Record<string, unknown>;
   style?: LayerStyle;
-  tooltip?: string[];
+  tooltip?: string | string[];
   cluster?: boolean;
   clusterOptions?: ClusterOptions;
 }
@@ -97,7 +96,7 @@ export interface RouteLayerSpec {
   /** Routing profile (default "driving") */
   profile?: RouteProfile;
   style?: RouteStyle;
-  tooltip?: string;
+  tooltip?: string | string[];
 }
 
 export interface HeatmapLayerSpec {

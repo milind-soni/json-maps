@@ -19,7 +19,6 @@ const MarkerSchema = z.object({
   tooltip: z.string().optional(),
   popup: z.union([z.string(), PopupSchema]).optional(),
   draggable: z.boolean().optional(),
-  glow: z.boolean().optional(),
 });
 
 /* ---- Color system ---- */
@@ -85,7 +84,7 @@ const GeoJsonLayerSchema = z.object({
   type: z.literal("geojson"),
   data: z.union([z.string(), z.record(z.string(), z.unknown())]),
   style: LayerStyleSchema.optional(),
-  tooltip: z.array(z.string()).optional(),
+  tooltip: z.union([z.string(), z.array(z.string())]).optional(),
   cluster: z.boolean().optional(),
   clusterOptions: ClusterOptionsSchema.optional(),
 });
@@ -105,7 +104,7 @@ const RouteLayerSchema = z.object({
   waypoints: z.array(z.tuple([z.number(), z.number()])).optional(),
   profile: z.enum(["driving", "walking", "cycling"]).optional(),
   style: RouteStyleSchema.optional(),
-  tooltip: z.string().optional(),
+  tooltip: z.union([z.string(), z.array(z.string())]).optional(),
 }).refine(
   (d) => (d.coordinates && d.coordinates.length >= 2) || (d.from && d.to),
   { message: "Route must have either coordinates (min 2 points) or from+to" },

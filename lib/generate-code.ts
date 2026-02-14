@@ -55,7 +55,7 @@ export function generateStaticCode(spec: MapSpec): string {
     .map((line, i) => (i === 0 ? line : `  ${line}`))
     .join("\n");
 
-  return `import { MapRenderer } from "@json-maps/react";
+  return `import { MapRenderer } from "json-maps";
 
 const spec = ${specStr};
 
@@ -120,7 +120,9 @@ export function generateExportFiles(spec: MapSpec): ExportFile[] {
             next: "^15.0.0",
             react: "^19.0.0",
             "react-dom": "^19.0.0",
+            "json-maps": "^0.1.0",
             "maplibre-gl": "^5.0.0",
+            "lucide-react": "^0.400.0",
           },
           devDependencies: {
             typescript: "^5.0.0",

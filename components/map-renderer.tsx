@@ -103,43 +103,17 @@ function sizeValueToExpression(size: SizeValue, fallback: number): any {
 /* ------------------------------------------------------------------ */
 
 export function DefaultMarker({ marker, color }: MarkerComponentProps) {
-  const { icon, label, glow } = marker;
+  const { icon, label } = marker;
   const size = icon ? 28 : 16;
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      {/* Glow rings — mapcn pattern: flex-centered absolute rings, no transform needed */}
-      {glow && (
-        <>
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: size * 2.5,
-              height: size * 2.5,
-              background: color,
-              opacity: 0.15,
-            }}
-          />
-          <div
-            className="absolute rounded-full pointer-events-none animate-ping"
-            style={{
-              width: size * 1.5,
-              height: size * 1.5,
-              background: color,
-              opacity: 0.3,
-              animationDuration: "2s",
-            }}
-          />
-        </>
-      )}
       {icon ? (
         <div
           className="relative flex items-center justify-center w-7 h-7 rounded-full transition-transform duration-150 hover:scale-[1.15]"
           style={{
             background: color,
-            boxShadow: glow
-              ? `0 0 12px ${color}80, 0 0 4px ${color}40`
-              : "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
           }}
         >
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -152,9 +126,7 @@ export function DefaultMarker({ marker, color }: MarkerComponentProps) {
             width: size,
             height: size,
             background: color,
-            boxShadow: glow
-              ? `0 0 10px ${color}80, 0 0 4px ${color}40`
-              : "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
           }}
         />
       )}
@@ -224,6 +196,15 @@ interface LayerTooltipData {
 }
 
 export function DefaultLayerTooltip({ properties, columns }: LayerTooltipComponentProps) {
+  // Simple text tooltip (single "_text" column = literal string)
+  if (columns.length === 1 && columns[0] === "_text") {
+    return (
+      <div className="rounded-md border border-border bg-popover text-popover-foreground shadow-md px-2.5 py-1.5 max-w-[280px] text-xs font-medium">
+        {String(properties._text)}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-md border border-border bg-popover text-popover-foreground shadow-md px-3 py-2 max-w-[280px]">
       <div className="space-y-0.5">
@@ -592,7 +573,6 @@ export function MapRenderer({
     el.style.cssText = `width:${baseSize}px;height:${baseSize}px;cursor:pointer;overflow:visible;`;
     el.dataset.color = color;
     if (ms.icon) el.dataset.icon = ms.icon;
-    if (ms.glow) el.dataset.glow = "1";
 
     const marker = new maplibregl.Marker({
       element: el,
@@ -799,7 +779,8 @@ export function MapRenderer({
 
       // Hover tooltip
       if (layer.tooltip && layer.tooltip.length > 0) {
-        const columns = layer.tooltip;
+        const isText = typeof layer.tooltip === "string";
+        const columns: string[] = isText ? ["_text"] : layer.tooltip as string[];
         const subLayers = [
           `${sourceId}-fill`,
           `${sourceId}-circle`,
@@ -812,12 +793,13 @@ export function MapRenderer({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const onMove = (e: any) => {
             if (!e.features || e.features.length === 0) return;
-            const props = (e.features[0].properties ?? {}) as Record<
-              string,
-              unknown
-            >;
             map.getCanvas().style.cursor = "pointer";
-            setLayerTooltip({ properties: props, columns });
+            if (isText) {
+              setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
+            } else {
+              const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
+              setLayerTooltip({ properties: props, columns });
+            }
 
             const popup = layerTooltipPopupRef.current;
             if (popup) {
@@ -919,11 +901,16 @@ export function MapRenderer({
     const handlers: Array<{ event: string; layer: string; handler: any }> = [];
 
     // Tooltip on hover
-    if (layer.tooltip) {
+    if (layer.tooltip && layer.tooltip.length > 0) {
+      const isText = typeof layer.tooltip === "string";
+      const columns: string[] = isText ? ["_text"] : layer.tooltip as string[];
+      const tooltipData: LayerTooltipData = isText
+        ? { properties: { _text: layer.tooltip as string }, columns }
+        : { properties: {}, columns }; // routes rarely have feature props
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const onMove = (e: any) => {
         map.getCanvas().style.cursor = "pointer";
-        setLayerTooltip({ properties: { info: layer.tooltip }, columns: ["info"] });
+        setLayerTooltip(tooltipData);
         const popup = layerTooltipPopupRef.current;
         if (popup) popup.setLngLat(e.lngLat).addTo(map);
       };
@@ -1091,7 +1078,7 @@ export function MapRenderer({
       if (existing) {
         existing.setLngLat(ms.coordinates);
         const el = existing.getElement();
-        if (el.dataset.color !== (ms.color ?? "") || el.dataset.icon !== (ms.icon ?? "") || el.dataset.glow !== (ms.glow ? "1" : undefined)) {
+        if (el.dataset.color !== (ms.color ?? "") || el.dataset.icon !== (ms.icon ?? "")) {
           removeMarker(id);
           addMarker(map, id, ms);
         }
@@ -1215,6 +1202,33 @@ export function MapRenderer({
           padding: 40,
           duration: 0,
         });
+      } else if (!spec.center && spec.zoom == null && spec.markers) {
+        // Auto-fit to markers only when no explicit viewport is set
+        const markers = Object.values(spec.markers);
+        if (markers.length > 0) {
+          const lngs = markers.map((m) => m.coordinates[0]);
+          const lats = markers.map((m) => m.coordinates[1]);
+          let west = Math.min(...lngs);
+          let south = Math.min(...lats);
+          let east = Math.max(...lngs);
+          let north = Math.max(...lats);
+          const MIN_SPAN = 0.01; // ~1km
+          if (east - west < MIN_SPAN) {
+            const mid = (west + east) / 2;
+            west = mid - MIN_SPAN / 2;
+            east = mid + MIN_SPAN / 2;
+          }
+          if (north - south < MIN_SPAN) {
+            const mid = (north + south) / 2;
+            south = mid - MIN_SPAN / 2;
+            north = mid + MIN_SPAN / 2;
+          }
+          map.fitBounds([west, south, east, north], {
+            padding: { top: 100, bottom: 100, left: 100, right: 100 },
+            maxZoom: 15,
+            duration: 0,
+          });
+        }
       }
       syncLayersRef.current();
     });
@@ -1286,35 +1300,6 @@ export function MapRenderer({
       return;
     }
 
-    // Auto-fit to markers (takes priority over center+zoom)
-    const markers = spec.markers ? Object.values(spec.markers) : [];
-    if (markers.length > 0) {
-      const lngs = markers.map((m) => m.coordinates[0]);
-      const lats = markers.map((m) => m.coordinates[1]);
-      let west = Math.min(...lngs);
-      let south = Math.min(...lats);
-      let east = Math.max(...lngs);
-      let north = Math.max(...lats);
-      // Ensure a minimum span so fitBounds works with 1-2 close points
-      const MIN_SPAN = 0.01; // ~1km
-      if (east - west < MIN_SPAN) {
-        const midLng = (west + east) / 2;
-        west = midLng - MIN_SPAN / 2;
-        east = midLng + MIN_SPAN / 2;
-      }
-      if (north - south < MIN_SPAN) {
-        const midLat = (north + south) / 2;
-        south = midLat - MIN_SPAN / 2;
-        north = midLat + MIN_SPAN / 2;
-      }
-      map.fitBounds([west, south, east, north], {
-        padding: { top: 100, bottom: 100, left: 100, right: 100 },
-        maxZoom: 15,
-      });
-      map.once("moveend", resetFlag);
-      return;
-    }
-
     map.flyTo({
       center: spec.center ?? DEFAULT_CENTER,
       zoom: spec.zoom ?? DEFAULT_ZOOM,
@@ -1322,7 +1307,7 @@ export function MapRenderer({
       bearing: spec.bearing ?? 0,
     });
     map.once("moveend", resetFlag);
-  }, [spec.center, spec.zoom, spec.pitch, spec.bearing, spec.bounds, spec.markers]);
+  }, [spec.center, spec.zoom, spec.pitch, spec.bearing, spec.bounds]);
 
   // Update projection reactively (skip on mount — init effect handles it)
   const prevProjectionRef = useRef(spec.projection);

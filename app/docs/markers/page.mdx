@@ -40,7 +40,6 @@ Markers are named pins on the map with optional colors, icons, labels, tooltips,
 | `tooltip` | `string` | No | Short text shown on hover |
 | `popup` | `string \| PopupSpec` | No | Content shown when marker is clicked |
 | `draggable` | `boolean` | No | Whether the marker can be dragged |
-| `glow` | `boolean` | No | Adds a colored pulse ring and glow shadow |
 
 ## Marker Styles
 
@@ -63,18 +62,6 @@ Markers come in two visual styles:
 The `icon` field accepts any [Lucide](https://lucide.dev/) icon name in kebab-case:
 
 `"coffee"`, `"hotel"`, `"utensils"`, `"landmark"`, `"train"`, `"plane"`, `"hospital"`, `"school"`, `"shopping-cart"`, `"fuel"`, `"tree-pine"`, `"mountain"`, `"music"`, `"camera"`, `"heart"`, `"star"`, `"flag"`, `"map-pin"`, `"building-2"`, `"warehouse"`, `"bike"`, `"ship"`, `"bus"`, `"car"`, etc.
-
-## Glow Effect
-
-Set `glow: true` for a pulsing colored ring effect — useful for highlighting active or important markers.
-
-```json
-{
-  "coordinates": [-73.98, 40.75],
-  "color": "#e74c3c",
-  "glow": true
-}
-```
 
 ## Tooltip vs Popup
 

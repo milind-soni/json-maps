@@ -22,22 +22,22 @@ const SIMULATION_STAGES: SimulationStage[] = [
     stream: '{"op":"replace","path":"/basemap","value":"dark"}',
   },
   {
-    spec: { basemap: "dark", center: [139.69, 35.68] },
-    stream: '{"op":"replace","path":"/center","value":[139.69,35.68]}',
+    spec: { basemap: "dark", center: [139.75, 35.68] },
+    stream: '{"op":"replace","path":"/center","value":[139.75,35.68]}',
   },
   {
-    spec: { basemap: "dark", center: [139.69, 35.68], zoom: 12 },
-    stream: '{"op":"replace","path":"/zoom","value":12}',
+    spec: { basemap: "dark", center: [139.75, 35.68], zoom: 11 },
+    stream: '{"op":"replace","path":"/zoom","value":11}',
   },
   {
-    spec: { basemap: "dark", center: [139.69, 35.68], zoom: 12, pitch: 45 },
+    spec: { basemap: "dark", center: [139.75, 35.68], zoom: 11, pitch: 45 },
     stream: '{"op":"replace","path":"/pitch","value":45}',
   },
   {
     spec: {
       basemap: "dark",
-      center: [139.69, 35.68],
-      zoom: 12,
+      center: [139.75, 35.68],
+      zoom: 11,
       pitch: 45,
       markers: {
         "tokyo-tower": {
@@ -58,8 +58,8 @@ const SIMULATION_STAGES: SimulationStage[] = [
   {
     spec: {
       basemap: "dark",
-      center: [139.69, 35.68],
-      zoom: 12,
+      center: [139.75, 35.68],
+      zoom: 11,
       pitch: 45,
       markers: {
         "tokyo-tower": {
@@ -90,8 +90,8 @@ const SIMULATION_STAGES: SimulationStage[] = [
   {
     spec: {
       basemap: "dark",
-      center: [139.69, 35.68],
-      zoom: 12,
+      center: [139.75, 35.68],
+      zoom: 11,
       pitch: 45,
       markers: {
         "tokyo-tower": {

@@ -37,7 +37,6 @@ const MARKER_FIELDS: Record<string, FieldDef> = {
     },
   },
   draggable: { description: "boolean" },
-  glow: { description: "boolean — adds colored pulse ring and glow shadow" },
 };
 
 const LAYER_STYLE_FIELDS: Record<string, FieldDef> = {
@@ -90,7 +89,7 @@ const LAYER_FIELDS: Record<string, FieldDef> = {
   },
   tooltip: {
     description:
-      'geojson: array of property names to show on hover, e.g. ["name", "population"]. route: string shown on hover, e.g. "Walking route · 2.5 km"',
+      'string for literal hover text (e.g. "Walking route · 2.5 km"), or array of feature property names to show on hover (e.g. ["name", "population"])',
   },
   weight: {
     description:
