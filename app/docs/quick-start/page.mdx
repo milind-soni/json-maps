@@ -4,13 +4,20 @@ export const metadata = { title: "Quick Start" }
 
 Get a map running in under a minute.
 
-## 1. Import the Renderer
+## 1. Install
 
-```tsx
-import { MapRenderer } from "@/components/map-renderer";
+```bash
+npm install json-maps maplibre-gl lucide-react
 ```
 
-## 2. Define a Spec
+## 2. Import the Renderer
+
+```tsx
+import { MapRenderer } from "json-maps";
+import "maplibre-gl/dist/maplibre-gl.css";
+```
+
+## 3. Define a Spec
 
 ```tsx
 const spec = {
@@ -28,7 +35,7 @@ const spec = {
 };
 ```
 
-## 3. Render It
+## 4. Render It
 
 ```tsx
 <MapRenderer spec={spec} />

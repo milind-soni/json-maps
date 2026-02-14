@@ -2,50 +2,68 @@ export const metadata = { title: "Installation" }
 
 # Installation
 
-json-maps is currently in active development. For now, clone the repository and use the components directly.
+## npm
 
-## Clone the Repository
+```bash
+npm install json-maps maplibre-gl lucide-react
+```
+
+json-maps requires **React 18+** as a peer dependency.
+
+## CSS
+
+Import the MapLibre GL stylesheet in your app's entry point or layout:
+
+```tsx
+import "maplibre-gl/dist/maplibre-gl.css";
+```
+
+## Tailwind CSS
+
+The component uses Tailwind classes internally for markers, legends, and popups. Add the package to your Tailwind content paths:
+
+```js
+// tailwind.config.js
+content: [
+  "./node_modules/json-maps/dist/**/*.js",
+  // ...your other paths
+]
+```
+
+## Usage
+
+```tsx
+import { MapRenderer } from "json-maps";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+const spec = {
+  basemap: "streets",
+  center: [-73.98, 40.75],
+  zoom: 12,
+};
+
+export default function MyMap() {
+  return <MapRenderer spec={spec} />;
+}
+```
+
+No API keys required. Basemaps are served free by [CARTO](https://carto.com/).
+
+## Dependencies
+
+- **[MapLibre GL](https://maplibre.org/)** — open-source map rendering engine
+- **[Lucide React](https://lucide.dev/)** — icons for markers
+- **[React](https://react.dev/)** — UI framework
+
+## From Source
+
+To run the playground and docs locally:
 
 ```bash
 git clone https://github.com/milind-soni/json-maps.git
 cd json-maps
 npm install
-```
-
-## Run the Dev Server
-
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the landing page, or go to [/playground](/playground) to start editing specs.
-
-## Project Structure
-
-```bash
-json-maps/
-├── lib/
-│   ├── spec.ts              # MapSpec type + basemap resolver
-│   ├── use-map-stream.ts    # JSONL streaming hook for AI generation
-│   └── generate-code.ts     # Static code + export generation
-├── components/
-│   ├── map-renderer.tsx     # Core renderer: spec → map (markers, popups)
-│   ├── playground.tsx       # JSON editor + live preview
-│   └── demo.tsx             # Landing page AI demo
-├── app/
-│   ├── (main)/page.tsx      # Landing page
-│   ├── api/generate/        # AI generation API route
-│   ├── playground/          # Playground route
-│   └── docs/                # Documentation
-└── PLAN.md                  # Full project plan
-```
-
-## Dependencies
-
-json-maps uses the following core dependencies:
-
-- **[MapLibre GL](https://maplibre.org/)** — open-source map rendering engine
-- **[React](https://react.dev/)** — UI framework for widgets and overlays
-- **[Next.js](https://nextjs.org/)** — framework for the website and docs
-
-No API keys required. Basemaps are served free by [CARTO](https://carto.com/).
+Open [http://localhost:3000](http://localhost:3000) for the landing page, or [/playground](/playground) to edit specs live.
