@@ -1068,7 +1068,9 @@ export function MapRenderer({
     for (const layerId of subLayers) {
       if (map.getLayer(layerId)) map.removeLayer(layerId);
     }
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    if (map.getSource(sourceId)) {
+      try { map.removeSource(sourceId); } catch { /* layer still attached — safe to ignore, will be cleaned up */ }
+    }
   }
 
   /* ---- Sync functions ---- */
