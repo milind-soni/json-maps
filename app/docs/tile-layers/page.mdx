@@ -1,0 +1,151 @@
+export const metadata = { title: "Tile Layers" }
+
+# Tile Layers
+
+Render vector tiles (MVT) and raster tiles directly from tile servers. These layer types let you work with real-world datasets at any scale — OpenStreetMap data, satellite imagery, elevation maps, and more.
+
+## Vector Tiles (MVT)
+
+Vector tiles contain geometry and properties, just like GeoJSON — but tiled for performance. They use the same style system as GeoJSON layers.
+
+```json
+{
+  "basemap": "light",
+  "center": [-73.98, 40.75],
+  "zoom": 14,
+  "layers": {
+    "contours": {
+      "type": "mvt",
+      "url": "https://demotiles.maplibre.org/tiles/tiles.json",
+      "sourceLayer": "centroids",
+      "style": {
+        "pointColor": "#e74c3c",
+        "pointRadius": 3
+      },
+      "tooltip": ["name"]
+    }
+  }
+}
+```
+
+### MVT Properties
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"mvt"` | yes | Vector tile layer |
+| `url` | `string` | yes | TileJSON URL or tile template with `{z}/{x}/{y}` |
+| `sourceLayer` | `string` | yes | Layer name within the vector tiles |
+| `style` | `LayerStyle` | no | Same style system as GeoJSON (fillColor, lineColor, pointColor, etc.) |
+| `tooltip` | `string \| string[]` | no | Hover tooltip — literal text or property names |
+| `filter` | `array` | no | MapLibre filter expression (e.g. `["==", "type", "park"]`) |
+| `minzoom` | `number` | no | Minimum zoom level to show |
+| `maxzoom` | `number` | no | Maximum zoom level to show |
+
+### Data-Driven Styling on Vector Tiles
+
+Since vector tiles carry feature properties, data-driven color and size work just like GeoJSON:
+
+```json
+{
+  "layers": {
+    "buildings": {
+      "type": "mvt",
+      "url": "https://example.com/tiles/{z}/{x}/{y}.pbf",
+      "sourceLayer": "buildings",
+      "style": {
+        "fillColor": {
+          "type": "categorical",
+          "attr": "building_type",
+          "palette": "Bold",
+          "categories": ["residential", "commercial", "industrial"]
+        },
+        "opacity": 0.7
+      },
+      "filter": ["has", "building_type"]
+    }
+  }
+}
+```
+
+## Raster Tiles
+
+Raster tiles are pre-rendered image tiles — satellite imagery, elevation, weather, historical maps.
+
+```json
+{
+  "basemap": "dark",
+  "center": [0, 20],
+  "zoom": 2,
+  "layers": {
+    "satellite": {
+      "type": "raster",
+      "url": "https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg",
+      "tileSize": 256,
+      "opacity": 0.6
+    }
+  }
+}
+```
+
+### Raster Properties
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"raster"` | yes | Raster tile layer |
+| `url` | `string` | yes | Tile URL template with `{z}/{x}/{y}` or TileJSON URL |
+| `tileSize` | `number` | no | Tile size in pixels (default 256) |
+| `opacity` | `number` | no | Opacity 0-1 (default 0.8) |
+| `minzoom` | `number` | no | Minimum zoom level |
+| `maxzoom` | `number` | no | Maximum zoom level |
+| `attribution` | `string` | no | Attribution text |
+
+## Combining Tile Layers
+
+Mix tile layers with GeoJSON, routes, and markers:
+
+```json
+{
+  "basemap": "dark",
+  "center": [-73.98, 40.75],
+  "zoom": 12,
+  "layers": {
+    "satellite": {
+      "type": "raster",
+      "url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      "tileSize": 256,
+      "opacity": 0.5
+    },
+    "roads": {
+      "type": "mvt",
+      "url": "https://demotiles.maplibre.org/tiles/tiles.json",
+      "sourceLayer": "centroids",
+      "style": { "pointColor": "#3b82f6" }
+    }
+  },
+  "markers": {
+    "office": {
+      "coordinates": [-73.98, 40.75],
+      "icon": "building-2",
+      "label": "HQ"
+    }
+  },
+  "controls": {
+    "zoom": true,
+    "layerSwitcher": true
+  }
+}
+```
+
+The layer switcher control works automatically with tile layers — users can toggle any layer on/off.
+
+## URL Formats
+
+Both layer types accept two URL formats:
+
+- **Tile template**: Contains `{z}`, `{x}`, `{y}` placeholders — used directly as tile URLs
+- **TileJSON**: A URL to a TileJSON metadata document — MapLibre reads tile endpoints from it
+
+```json
+"url": "https://example.com/tiles/{z}/{x}/{y}.pbf"
+"url": "https://example.com/tiles/tiles.json"
+```

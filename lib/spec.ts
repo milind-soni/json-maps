@@ -114,7 +114,41 @@ export interface HeatmapLayerSpec {
   palette?: string;
 }
 
-export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec;
+export interface VectorTileLayerSpec {
+  type: "mvt";
+  /** TileJSON URL or tile URL template with {z}/{x}/{y} placeholders */
+  url: string;
+  /** Source layer name within the vector tiles (required) */
+  sourceLayer: string;
+  /** Reuses the same style system as GeoJSON layers */
+  style?: LayerStyle;
+  /** Min zoom level to show this layer */
+  minzoom?: number;
+  /** Max zoom level to show this layer */
+  maxzoom?: number;
+  /** Tooltip — string for literal text, or array of property names */
+  tooltip?: string | string[];
+  /** MapLibre filter expression (e.g. ["==", "type", "park"]) */
+  filter?: unknown[];
+}
+
+export interface RasterTileLayerSpec {
+  type: "raster";
+  /** Tile URL template with {z}/{x}/{y} placeholders, or TileJSON URL */
+  url: string;
+  /** Tile size in pixels (default 256) */
+  tileSize?: number;
+  /** Min zoom level */
+  minzoom?: number;
+  /** Max zoom level */
+  maxzoom?: number;
+  /** Opacity 0-1 (default 0.8) */
+  opacity?: number;
+  /** Attribution text shown on the map */
+  attribution?: string;
+}
+
+export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec | VectorTileLayerSpec | RasterTileLayerSpec;
 
 /* ---- Controls ---- */
 
@@ -130,6 +164,8 @@ export interface ControlsSpec {
   fullscreen?: boolean;
   locate?: boolean;
   basemapSwitcher?: boolean;
+  search?: boolean;
+  layerSwitcher?: boolean | { position?: ControlPosition };
   position?: ControlPosition;
 }
 
@@ -139,6 +175,22 @@ export interface LegendSpec {
   layer: string;
   title?: string;
   position?: ControlPosition;
+}
+
+/* ---- Widget ---- */
+
+export interface WidgetRowSpec {
+  label: string;
+  value: string;
+  color?: string;
+}
+
+export interface WidgetSpec {
+  position?: ControlPosition;
+  title?: string;
+  value?: string;
+  description?: string;
+  rows?: WidgetRowSpec[];
 }
 
 /* ---- Map spec ---- */
@@ -155,6 +207,7 @@ export interface MapSpec {
   layers?: Record<string, LayerSpec>;
   controls?: ControlsSpec;
   legend?: Record<string, LegendSpec>;
+  widgets?: Record<string, WidgetSpec>;
 }
 
 /* ---- Viewport & renderer props ---- */

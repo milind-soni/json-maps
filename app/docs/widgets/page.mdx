@@ -1,0 +1,116 @@
+export const metadata = { title: "Widgets" }
+
+# Widgets
+
+Widgets are overlay cards displayed on top of the map — stats, info panels, and dashboards.
+
+## Usage
+
+```json
+{
+  "widgets": {
+    "stats": {
+      "position": "top-left",
+      "title": "Active Users",
+      "value": "2,847",
+      "description": "+12.5% vs last hour"
+    }
+  }
+}
+```
+
+## Properties
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `position` | `ControlPosition` | `"top-left"` | Corner to place the widget |
+| `title` | `string` | — | Small uppercase label at the top |
+| `value` | `string` | — | Large prominent number or stat |
+| `description` | `string` | — | Subtitle text below the value |
+| `rows` | `WidgetRow[]` | — | Key-value rows displayed in the card |
+
+### WidgetRow
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `label` | `string` | Yes | Row label (left side) |
+| `value` | `string` | Yes | Row value (right side) |
+| `color` | `string` | No | Hex color for the value text |
+
+## Examples
+
+### Stat card
+
+```json
+{
+  "basemap": "dark",
+  "center": [-73.98, 40.75],
+  "zoom": 12,
+  "widgets": {
+    "visitors": {
+      "position": "top-left",
+      "title": "Visitors Today",
+      "value": "12,493",
+      "description": "Across 3 locations"
+    }
+  }
+}
+```
+
+### Key-value card
+
+```json
+{
+  "widgets": {
+    "route-info": {
+      "position": "top-left",
+      "title": "Route Details",
+      "rows": [
+        { "label": "Distance", "value": "6.2 mi" },
+        { "label": "Duration", "value": "32 min" },
+        { "label": "Status", "value": "Active", "color": "#22c55e" }
+      ]
+    }
+  }
+}
+```
+
+### Combined stat + rows
+
+```json
+{
+  "basemap": "dark",
+  "center": [0, 30],
+  "zoom": 2,
+  "widgets": {
+    "dashboard": {
+      "position": "top-left",
+      "title": "Global Traffic",
+      "value": "48,291",
+      "description": "requests/min",
+      "rows": [
+        { "label": "Americas", "value": "18,420", "color": "#3b82f6" },
+        { "label": "Europe", "value": "15,832", "color": "#8b5cf6" },
+        { "label": "Asia", "value": "14,039", "color": "#f59e0b" }
+      ]
+    }
+  }
+}
+```
+
+## Positioning
+
+Widgets use the same positions as controls and legends:
+
+- `"top-left"` (default)
+- `"top-right"`
+- `"bottom-left"`
+- `"bottom-right"`
+
+## Styling
+
+Widgets automatically adapt to the basemap theme — glass-morphism on light basemaps, dark glass on dark basemaps.
+
+## Why Named Map?
+
+Like markers, widgets use a named map (`{ "stats": {...} }`) so individual widgets can be updated or removed via JSON patches without replacing the whole set.

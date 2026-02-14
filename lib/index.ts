@@ -14,6 +14,8 @@ export type {
   GeoJsonLayerSpec,
   RouteLayerSpec,
   HeatmapLayerSpec,
+  VectorTileLayerSpec,
+  RasterTileLayerSpec,
   RouteProfile,
   RouteStyle,
   LayerSpec,
@@ -27,6 +29,8 @@ export type {
   ControlsSpec,
   ControlPosition,
   LegendSpec,
+  WidgetSpec,
+  WidgetRowSpec,
 } from "./spec";
 
 export { BASEMAP_STYLES, resolveBasemapStyle } from "./spec";

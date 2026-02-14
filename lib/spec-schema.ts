@@ -122,7 +122,28 @@ const HeatmapLayerSchema = z.object({
   }).optional(),
 });
 
-const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema]);
+const VectorTileLayerSchema = z.object({
+  type: z.literal("mvt"),
+  url: z.string().min(1),
+  sourceLayer: z.string().min(1),
+  style: LayerStyleSchema.optional(),
+  minzoom: z.number().min(0).max(24).optional(),
+  maxzoom: z.number().min(0).max(24).optional(),
+  tooltip: z.union([z.string(), z.array(z.string())]).optional(),
+  filter: z.array(z.unknown()).optional(),
+});
+
+const RasterTileLayerSchema = z.object({
+  type: z.literal("raster"),
+  url: z.string().min(1),
+  tileSize: z.number().min(1).optional(),
+  minzoom: z.number().min(0).max(24).optional(),
+  maxzoom: z.number().min(0).max(24).optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  attribution: z.string().optional(),
+});
+
+const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema, VectorTileLayerSchema, RasterTileLayerSchema]);
 
 /* ---- Legend ---- */
 
@@ -130,6 +151,22 @@ const LegendSchema = z.object({
   layer: z.string(),
   title: z.string().optional(),
   position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
+});
+
+/* ---- Widget ---- */
+
+const WidgetRowSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+  color: z.string().optional(),
+});
+
+const WidgetSchema = z.object({
+  position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
+  title: z.string().optional(),
+  value: z.string().optional(),
+  description: z.string().optional(),
+  rows: z.array(WidgetRowSchema).optional(),
 });
 
 /* ---- Controls ---- */
@@ -140,6 +177,13 @@ const ControlsSchema = z.object({
   fullscreen: z.boolean().optional(),
   locate: z.boolean().optional(),
   basemapSwitcher: z.boolean().optional(),
+  search: z.boolean().optional(),
+  layerSwitcher: z.union([
+    z.boolean(),
+    z.object({
+      position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
+    }),
+  ]).optional(),
   position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
 });
 
@@ -157,6 +201,7 @@ export const MapSpecSchema = z.object({
   layers: z.record(z.string(), LayerSchema).optional(),
   controls: ControlsSchema.optional(),
   legend: z.record(z.string(), LegendSchema).optional(),
+  widgets: z.record(z.string(), WidgetSchema).optional(),
 });
 
 /* ---- Validation helpers ---- */

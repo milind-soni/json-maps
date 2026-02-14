@@ -58,7 +58,7 @@ const LAYER_STYLE_FIELDS: Record<string, FieldDef> = {
 };
 
 const LAYER_FIELDS: Record<string, FieldDef> = {
-  type: { description: '"geojson", "route", or "heatmap" (required)' },
+  type: { description: '"geojson", "route", "heatmap", "mvt" (vector tiles), or "raster" (tile imagery) (required)' },
   data: {
     description:
       '(geojson only) URL string to a GeoJSON file OR inline GeoJSON object',
@@ -117,6 +117,30 @@ const LAYER_FIELDS: Record<string, FieldDef> = {
       colors: { description: '3-color array for small/medium/large clusters (default ["#22c55e","#eab308","#ef4444"])' },
     },
   },
+  url: {
+    description:
+      '(mvt/raster) tile URL template with {z}/{x}/{y} placeholders (e.g. "https://example.com/tiles/{z}/{x}/{y}.pbf") OR a TileJSON URL',
+  },
+  sourceLayer: {
+    description:
+      '(mvt only, required) name of the source layer within vector tiles (e.g. "buildings", "roads", "water")',
+  },
+  filter: {
+    description:
+      '(mvt only) MapLibre filter expression to filter features (e.g. ["==", "type", "park"])',
+  },
+  tileSize: {
+    description: "(raster only) tile size in pixels (default 256)",
+  },
+  attribution: {
+    description: "(raster only) attribution text shown on the map",
+  },
+  minzoom: {
+    description: "(mvt/raster) minimum zoom level to show this layer (0-24)",
+  },
+  maxzoom: {
+    description: "(mvt/raster) maximum zoom level to show this layer (0-24)",
+  },
 };
 
 const SPEC_FIELDS: Record<string, FieldDef> = {
@@ -157,6 +181,21 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
       },
     },
   },
+  widgets: {
+    description: "named map of overlay cards displayed on top of the map, each with:",
+    children: {
+      position: {
+        description:
+          '"top-left" | "top-right" | "bottom-left" | "bottom-right" (default "top-left")',
+      },
+      title: { description: "small uppercase label at the top of the card" },
+      value: { description: "large prominent number or stat (e.g. \"2,847\")" },
+      description: { description: "subtitle text below the value" },
+      rows: {
+        description: "array of { label, value, color? } key-value rows displayed in the card",
+      },
+    },
+  },
   controls: {
     description: "map UI controls overlay",
     children: {
@@ -165,6 +204,8 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
       fullscreen: { description: "show fullscreen toggle (default false)" },
       locate: { description: "show locate-me button (default false)" },
       basemapSwitcher: { description: "show light/dark/streets toggle (default false)" },
+      search: { description: "show geocoding search bar to find places (default false)" },
+      layerSwitcher: { description: 'true OR { position?: "top-left"|"top-right"|"bottom-left"|"bottom-right" } — show layer visibility toggle panel. Panel opens downward from top corners, upward from bottom corners. Defaults to controls position.' },
       position: {
         description:
           '"top-left" | "top-right" | "bottom-left" | "bottom-right" (default "top-right")',
@@ -257,7 +298,10 @@ const BASE_RULES = [
   'For routes, use type "route" with EITHER a coordinates array of [lng, lat] pairs for manual paths, OR from/to fields for OSRM auto-routing that follows real roads. Use profile "driving", "walking", or "cycling" (default "driving"). Add waypoints array for intermediate stops. Optional style (color, width, opacity, dashed).',
   "When the user asks for clustering, set cluster: true on the geojson layer. Optionally include clusterOptions for radius, maxZoom, colors.",
   'For heatmaps, use type "heatmap" with a GeoJSON data source of Point features. Set weight to a numeric property for weighted density (e.g. "mag" for earthquake magnitude). Adjust radius (default 30) and intensity (default 1) for visual density. Use a sequential palette like OrYel, Sunset, or Burg.',
+  'For vector tiles (MVT), use type "mvt" with a tile URL template containing {z}/{x}/{y} or a TileJSON URL. Always specify sourceLayer (the layer name inside the tiles). Style with the same LayerStyle system as GeoJSON (fillColor, lineColor, pointColor). Support data-driven color and tooltips from tile feature properties.',
+  'For raster tiles (satellite imagery, terrain, etc.), use type "raster" with a tile URL template containing {z}/{x}/{y}. Set tileSize (default 256) and opacity. These are image tiles — no feature properties or tooltips.',
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
+  'For widgets (stat cards / info overlays), use "/widgets/<id>". Include title (small label), value (big number), description (subtitle), and/or rows (key-value pairs). Use position to place them. Only add widgets when the user asks for dashboard-style overlays or stats on the map.',
 ];
 
 const COORDINATE_EXAMPLES = [

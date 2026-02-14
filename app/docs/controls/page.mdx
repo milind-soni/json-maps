@@ -27,6 +27,8 @@ Map controls are interactive buttons positioned over the map — zoom, compass, 
 | `fullscreen` | `boolean` | `false` | Show fullscreen toggle |
 | `locate` | `boolean` | `false` | Show locate-me button (uses browser geolocation) |
 | `basemapSwitcher` | `boolean` | `false` | Show light/dark/streets basemap toggle (bottom-left) |
+| `search` | `boolean` | `false` | Show geocoding search bar (top-left) |
+| `layerSwitcher` | `boolean \| object` | `false` | Show layer visibility toggle panel. Pass `true` to use controls position, or `{ "position": "bottom-left" }` for independent placement. Panel opens downward from top corners, upward from bottom corners. |
 | `position` | `ControlPosition` | `"top-right"` | Corner to place controls |
 
 ## Positioning
@@ -63,6 +65,8 @@ Full controls at bottom-right:
     "fullscreen": true,
     "locate": true,
     "basemapSwitcher": true,
+    "search": true,
+    "layerSwitcher": { "position": "top-left" },
     "position": "bottom-right"
   }
 }
