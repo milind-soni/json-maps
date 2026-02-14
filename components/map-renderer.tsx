@@ -399,6 +399,68 @@ function MapControls({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Basemap switcher                                                    */
+/* ------------------------------------------------------------------ */
+
+const BASEMAP_OPTIONS: { id: string; label: string; bg: string; border: string }[] = [
+  { id: "light", label: "Light", bg: "#e8e8e8", border: "#ccc" },
+  { id: "dark", label: "Dark", bg: "#2d2d2d", border: "#555" },
+  { id: "streets", label: "Streets", bg: "#f0ece2", border: "#ccc" },
+];
+
+function BasemapSwitcher({
+  activeBasemap,
+  mapRef,
+  syncMarkersRef,
+  syncLayersRef,
+}: {
+  activeBasemap: string;
+  mapRef: React.RefObject<maplibregl.Map | null>;
+  syncMarkersRef: React.RefObject<() => void>;
+  syncLayersRef: React.RefObject<() => void>;
+}) {
+  const [active, setActive] = useState(activeBasemap || "light");
+
+  return (
+    <div className="absolute bottom-2 left-2 z-10 flex gap-1 rounded-md bg-white/90 backdrop-blur-sm p-1 shadow-md border border-gray-200">
+      {BASEMAP_OPTIONS.map((opt) => (
+        <button
+          key={opt.id}
+          onClick={() => {
+            const map = mapRef.current;
+            if (!map || active === opt.id) return;
+            setActive(opt.id);
+            const style = resolveBasemapStyle(opt.id);
+            if (style) {
+              map.setStyle(style);
+              map.once("styledata", () => {
+                syncMarkersRef.current();
+                syncLayersRef.current();
+              });
+            }
+          }}
+          title={opt.label}
+          className="flex items-center justify-center rounded transition-all duration-150 cursor-pointer"
+          style={{
+            width: 28,
+            height: 28,
+            background: opt.bg,
+            border: active === opt.id ? "2px solid #3b82f6" : `1px solid ${opt.border}`,
+            opacity: active === opt.id ? 1 : 0.7,
+          }}
+        >
+          {active === opt.id && (
+            <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke={opt.id === "dark" ? "#fff" : "#3b82f6"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="2,7 5.5,10.5 12,3.5" />
+            </svg>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Legend                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -1349,6 +1411,14 @@ export function MapRenderer({
             controls={spec.controls}
             mapRef={mapRef}
             containerRef={containerRef}
+          />
+        )}
+        {spec.controls?.basemapSwitcher && (
+          <BasemapSwitcher
+            activeBasemap={spec.basemap || "light"}
+            mapRef={mapRef}
+            syncMarkersRef={syncMarkersRef}
+            syncLayersRef={syncLayersRef}
           />
         )}
         {spec.legend &&

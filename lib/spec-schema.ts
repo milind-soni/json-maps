@@ -139,6 +139,7 @@ const ControlsSchema = z.object({
   compass: z.boolean().optional(),
   fullscreen: z.boolean().optional(),
   locate: z.boolean().optional(),
+  basemapSwitcher: z.boolean().optional(),
   position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
 });
 

@@ -129,6 +129,7 @@ export interface ControlsSpec {
   compass?: boolean;
   fullscreen?: boolean;
   locate?: boolean;
+  basemapSwitcher?: boolean;
   position?: ControlPosition;
 }
 

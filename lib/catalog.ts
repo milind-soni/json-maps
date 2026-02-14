@@ -164,6 +164,7 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
       compass: { description: "show compass/north arrow (default true)" },
       fullscreen: { description: "show fullscreen toggle (default false)" },
       locate: { description: "show locate-me button (default false)" },
+      basemapSwitcher: { description: "show light/dark/streets toggle (default false)" },
       position: {
         description:
           '"top-left" | "top-right" | "bottom-left" | "bottom-right" (default "top-right")',
