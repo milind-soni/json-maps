@@ -138,6 +138,35 @@ Mix tile layers with GeoJSON, routes, and markers:
 
 The layer switcher control works automatically with tile layers — users can toggle any layer on/off.
 
+## Overture Maps via Fused
+
+[Fused](https://fused.io) serves Overture Maps data as vector tiles. Use `sourceLayer: "udf"` for all Fused/udf.ai tile URLs.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-0.12, 51.50],
+  "zoom": 13,
+  "layers": {
+    "overture-buildings": {
+      "type": "mvt",
+      "url": "https://unstable.udf.ai/fsh_2hMoO790LkKZoVGGytJRfG/run/tiles/{z}/{x}/{y}?dtype_out_vector=mvt",
+      "sourceLayer": "udf",
+      "style": {
+        "fillColor": "#3b82f6",
+        "lineColor": "#1e3a5f",
+        "opacity": 0.6
+      },
+      "tooltip": ["name", "class", "subtype"]
+    }
+  },
+  "controls": {
+    "zoom": true,
+    "layerSwitcher": true
+  }
+}
+```
+
 ## URL Formats
 
 Both layer types accept two URL formats:
