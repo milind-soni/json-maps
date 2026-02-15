@@ -351,6 +351,14 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/zoom","value":3}
 {"op":"add","path":"/layers/quake-heat","value":{"type":"heatmap","data":"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson","weight":"mag","radius":25,"intensity":1.5,"palette":"Sunset"}}`,
   },
+  {
+    prompt: "Show Overture buildings in London",
+    output: `{"op":"replace","path":"/basemap","value":"dark"}
+{"op":"replace","path":"/center","value":[-0.12,51.50]}
+{"op":"replace","path":"/zoom","value":13}
+{"op":"add","path":"/layers/overture-buildings","value":{"type":"mvt","url":"https://unstable.udf.ai/fsh_2hMoO790LkKZoVGGytJRfG/run/tiles/{z}/{x}/{y}?dtype_out_vector=mvt","sourceLayer":"udf","style":{"fillColor":"#3b82f6","lineColor":"#1e3a5f","opacity":0.6},"tooltip":["name","class","subtype"]}}
+{"op":"replace","path":"/controls","value":{"zoom":true,"layerSwitcher":true}}`,
+  },
 ];
 
 /* ---- Public API ---- */
