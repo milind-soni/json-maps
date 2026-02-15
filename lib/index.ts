@@ -1,4 +1,4 @@
-export { MapRenderer, useMap, DefaultMarker, DefaultPopup, DefaultTooltip, DefaultLayerTooltip } from "../components/map-renderer";
+export { MapRenderer, useMap, DefaultMarker, DefaultPopup, DefaultTooltip, DefaultLayerTooltip } from "../components/map";
 
 export type {
   MapSpec,

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
-import { MapRenderer } from "./map-renderer";
+import { MapRenderer } from "./map";
 import { ExportModal } from "./export-modal";
 import { type MapSpec } from "@/lib/spec";
 import { generateStaticCode } from "@/lib/generate-code";

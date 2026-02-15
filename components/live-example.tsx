@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapRenderer } from "./map-renderer";
+import { MapRenderer } from "./map";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
 import { type MapSpec } from "@/lib/spec";
