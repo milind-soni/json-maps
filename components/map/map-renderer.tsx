@@ -19,6 +19,7 @@ import {
   addHeatmapLayer,
   addVectorTileLayer,
   addRasterTileLayer,
+  addParquetLayer,
   removeLayer,
   type LayerDeps,
   type LayerTooltipData,
@@ -270,6 +271,8 @@ export function MapRenderer({
         addVectorTileLayer(map, id, layerSpec, layerDeps);
       } else if (layerSpec.type === "raster") {
         addRasterTileLayer(map, id, layerSpec);
+      } else if (layerSpec.type === "parquet") {
+        addParquetLayer(map, id, layerSpec, layerDeps);
       } else {
         addGeoJsonLayer(map, id, layerSpec, layerDeps);
       }

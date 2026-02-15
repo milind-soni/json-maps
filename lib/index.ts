@@ -16,6 +16,7 @@ export type {
   HeatmapLayerSpec,
   VectorTileLayerSpec,
   RasterTileLayerSpec,
+  ParquetLayerSpec,
   RouteProfile,
   RouteStyle,
   LayerSpec,

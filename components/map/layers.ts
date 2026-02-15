@@ -6,7 +6,9 @@ import type {
   HeatmapLayerSpec,
   VectorTileLayerSpec,
   RasterTileLayerSpec,
+  ParquetLayerSpec,
 } from "@/lib/spec";
+import { loadGeoParquet } from "@/lib/parquet-loader";
 import type { RoutingProvider } from "@/lib/routing";
 import { colorValueToExpression, sizeValueToExpression } from "./utils";
 
@@ -341,14 +343,13 @@ export function addRouteLayer(
       })
         .then((coords: [number, number][]) => {
           deps.pendingRouteFetchRef.current.delete(id);
-          // Check map still exists (not unmounted during fetch)
-          if (!deps.mapRef.current) return;
+          if (deps.mapRef.current !== map) return;
           renderRouteOnMap(map, id, layer, coords, deps);
         })
         .catch((err: unknown) => {
           deps.pendingRouteFetchRef.current.delete(id);
           console.warn(`[json-maps] Routing failed for "${id}", falling back to straight line:`, err);
-          if (!deps.mapRef.current) return;
+          if (deps.mapRef.current !== map) return;
           // Fallback: straight line between from/to
           const fallback = [layer.from!, ...(layer.waypoints ?? []), layer.to!];
           renderRouteOnMap(map, id, layer, fallback, deps);
@@ -620,6 +621,39 @@ export function addRasterTileLayer(
       }
     } catch { /* ignore */ }
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Parquet layer (GeoParquet → GeoJSON)                               */
+/* ------------------------------------------------------------------ */
+
+export function addParquetLayer(
+  map: maplibregl.Map,
+  id: string,
+  layer: ParquetLayerSpec,
+  deps: LayerDeps,
+) {
+  // Mark as pending so syncLayers doesn't re-trigger while fetching
+  deps.pendingRouteFetchRef.current.add(id);
+
+  loadGeoParquet(layer.data, layer.geometryColumn)
+    .then((geojson) => {
+      deps.pendingRouteFetchRef.current.delete(id);
+      if (deps.mapRef.current !== map) return;
+      const geoJsonSpec: GeoJsonLayerSpec = {
+        type: "geojson",
+        data: geojson as unknown as Record<string, unknown>,
+        style: layer.style,
+        tooltip: layer.tooltip,
+        cluster: layer.cluster,
+        clusterOptions: layer.clusterOptions,
+      };
+      addGeoJsonLayer(map, id, geoJsonSpec, deps);
+    })
+    .catch((err: unknown) => {
+      deps.pendingRouteFetchRef.current.delete(id);
+      console.warn(`[json-maps] Failed to load parquet "${id}":`, err);
+    });
 }
 
 /* ------------------------------------------------------------------ */

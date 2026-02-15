@@ -148,7 +148,22 @@ export interface RasterTileLayerSpec {
   attribution?: string;
 }
 
-export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec | VectorTileLayerSpec | RasterTileLayerSpec;
+export interface ParquetLayerSpec {
+  type: "parquet";
+  /** URL to a GeoParquet file */
+  data: string;
+  /** Geometry column name (auto-detected from GeoParquet metadata if omitted) */
+  geometryColumn?: string;
+  /** Reuses the same style system as GeoJSON layers */
+  style?: LayerStyle;
+  /** Tooltip — array of property names */
+  tooltip?: string | string[];
+  /** Enable point clustering */
+  cluster?: boolean;
+  clusterOptions?: ClusterOptions;
+}
+
+export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec | VectorTileLayerSpec | RasterTileLayerSpec | ParquetLayerSpec;
 
 /* ---- Controls ---- */
 
