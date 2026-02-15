@@ -640,15 +640,38 @@ export function addParquetLayer(
     .then((geojson) => {
       deps.pendingRouteFetchRef.current.delete(id);
       if (deps.mapRef.current !== map) return;
+
+      // Auto-tooltip: show all property columns when tooltip is not specified
+      let tooltip = layer.tooltip;
+      if (!tooltip && geojson.features.length > 0) {
+        tooltip = Object.keys(geojson.features[0].properties ?? {});
+      }
+
       const geoJsonSpec: GeoJsonLayerSpec = {
         type: "geojson",
         data: geojson as unknown as Record<string, unknown>,
         style: layer.style,
-        tooltip: layer.tooltip,
+        tooltip,
         cluster: layer.cluster,
         clusterOptions: layer.clusterOptions,
       };
       addGeoJsonLayer(map, id, geoJsonSpec, deps);
+
+      // Auto fit-to-bounds
+      if (geojson.features.length > 0) {
+        const bounds = new maplibregl.LngLatBounds();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const extend = (c: any) => {
+          if (typeof c[0] === "number") bounds.extend(c as [number, number]);
+          else for (const sub of c) extend(sub);
+        };
+        for (const f of geojson.features) {
+          if (f.geometry && "coordinates" in f.geometry) extend(f.geometry.coordinates);
+        }
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds, { padding: 40, maxZoom: 15, duration: 500 });
+        }
+      }
     })
     .catch((err: unknown) => {
       deps.pendingRouteFetchRef.current.delete(id);

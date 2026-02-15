@@ -143,7 +143,17 @@ const RasterTileLayerSchema = z.object({
   attribution: z.string().optional(),
 });
 
-const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema, VectorTileLayerSchema, RasterTileLayerSchema]);
+const ParquetLayerSchema = z.object({
+  type: z.literal("parquet"),
+  data: z.string().min(1),
+  geometryColumn: z.string().optional(),
+  style: LayerStyleSchema.optional(),
+  tooltip: z.union([z.string(), z.array(z.string())]).optional(),
+  cluster: z.boolean().optional(),
+  clusterOptions: ClusterOptionsSchema.optional(),
+});
+
+const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema, VectorTileLayerSchema, RasterTileLayerSchema, ParquetLayerSchema]);
 
 /* ---- Legend ---- */
 

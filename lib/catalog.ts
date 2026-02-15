@@ -303,7 +303,7 @@ const BASE_RULES = [
   'For heatmaps, use type "heatmap" with a GeoJSON data source of Point features. Set weight to a numeric property for weighted density (e.g. "mag" for earthquake magnitude). Adjust radius (default 30) and intensity (default 1) for visual density. Use a sequential palette like OrYel, Sunset, or Burg.',
   'For vector tiles (MVT), use type "mvt" with a tile URL template containing {z}/{x}/{y} or a TileJSON URL. Always specify sourceLayer (the layer name inside the tiles). For Fused (fused.io) or udf.ai tile URLs, always use sourceLayer "udf". Style with the same LayerStyle system as GeoJSON (fillColor, lineColor, pointColor). Support data-driven color and tooltips from tile feature properties.',
   'For raster tiles (satellite imagery, terrain, etc.), use type "raster" with a tile URL template containing {z}/{x}/{y}. Set tileSize (default 256) and opacity. These are image tiles — no feature properties or tooltips.',
-  'IMPORTANT: When the user provides a URL ending in .parquet, ALWAYS use type "parquet" — never "geojson". Keep the URL exactly as given, do not change the file extension. The geometry column is auto-detected from GeoParquet metadata. Style, tooltip, and clustering work the same as GeoJSON layers.',
+  'IMPORTANT: When the user provides a URL containing "parquet" (either ending in .parquet OR with dtype_out_vector=parquet as a query parameter), ALWAYS use type "parquet". Keep the URL exactly as given — do not modify the URL, path, or query parameters. For Fused/udf.ai URLs with dtype_out_vector=parquet, use the full URL as-is. Do NOT set center or zoom for parquet layers — the map auto-fits to the data bounds after loading. The geometry column is auto-detected from GeoParquet metadata. Style, tooltip, and clustering work the same as GeoJSON layers.',
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
   'For widgets (stat cards / info overlays), use "/widgets/<id>". Include title (small label), value (big number), description (subtitle), and/or rows (key-value pairs). Use position to place them. Only add widgets when the user asks for dashboard-style overlays or stats on the map.',
 ];
@@ -357,10 +357,11 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
   },
   {
     prompt: "Open this https://example.com/data.parquet",
-    output: `{"op":"replace","path":"/basemap","value":"light"}
-{"op":"replace","path":"/center","value":[0,20]}
-{"op":"replace","path":"/zoom","value":2}
-{"op":"add","path":"/layers/data","value":{"type":"parquet","data":"https://example.com/data.parquet","style":{"fillColor":"#3b82f6","pointColor":"#3b82f6","opacity":0.7}}}`,
+    output: `{"op":"add","path":"/layers/data","value":{"type":"parquet","data":"https://example.com/data.parquet","style":{"fillColor":"#3b82f6","pointColor":"#3b82f6","opacity":0.7}}}`,
+  },
+  {
+    prompt: "Open this https://unstable.udf.ai/fsh_abc123/run?dtype_out_vector=parquet in yellow",
+    output: `{"op":"add","path":"/layers/data","value":{"type":"parquet","data":"https://unstable.udf.ai/fsh_abc123/run?dtype_out_vector=parquet","style":{"fillColor":"#eab308","pointColor":"#eab308","opacity":0.7}}}`,
   },
   {
     prompt: "Show Overture buildings in London",
