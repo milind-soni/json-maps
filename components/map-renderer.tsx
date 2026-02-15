@@ -1434,22 +1434,32 @@ export function MapRenderer({
 
       map.addSource(sourceId, sourceOpts);
 
-      // Shared layer options
+      // Shared layer options (without filter — each sub-layer adds geometry-type filter)
       const baseOpts = {
         source: sourceId,
         "source-layer": layer.sourceLayer,
         ...(layer.minzoom != null ? { minzoom: layer.minzoom } : {}),
         ...(layer.maxzoom != null ? { maxzoom: layer.maxzoom } : {}),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(layer.filter ? { filter: layer.filter as any } : {}),
       };
 
-      // Fill sub-layer (polygons)
+      // Helper: combine user filter with geometry-type filter
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const withGeomFilter = (geomFilter: any[]) => {
+        if (layer.filter) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return ["all", layer.filter as any, geomFilter];
+        }
+        return geomFilter;
+      };
+
+      // Fill sub-layer (polygons only)
       const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
       map.addLayer({
         id: `${sourceId}-fill`,
         type: "fill",
         ...baseOpts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        filter: withGeomFilter(["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]) as any,
         paint: {
           "fill-color": fillColor,
           "fill-opacity": opacity,
@@ -1462,6 +1472,8 @@ export function MapRenderer({
         id: `${sourceId}-line`,
         type: "line",
         ...baseOpts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(layer.filter ? { filter: layer.filter as any } : {}),
         paint: {
           "line-color": lineColor,
           "line-width": style.lineWidth ?? 1,
@@ -1469,7 +1481,7 @@ export function MapRenderer({
         },
       });
 
-      // Circle sub-layer (points)
+      // Circle sub-layer (points only — not polygon vertices)
       const pointColor = colorValueToExpression(
         style.pointColor ?? style.fillColor ?? "#3b82f6",
       );
@@ -1477,6 +1489,8 @@ export function MapRenderer({
         id: `${sourceId}-circle`,
         type: "circle",
         ...baseOpts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        filter: withGeomFilter(["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]]) as any,
         paint: {
           "circle-color": pointColor,
           "circle-radius": sizeValueToExpression(style.pointRadius ?? 5, 5),
