@@ -1,0 +1,252 @@
+import { LiveExample } from "@/components/live-example"
+
+export const metadata = { title: "Tutorial: Earthquake Visualization" }
+
+# Tutorial: Earthquake Visualization
+
+Build a live earthquake map in 5 steps using real USGS data.
+
+## Step 1 — Dark Basemap with Global View
+
+Start with a dark basemap centered on the Pacific Ring of Fire.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-150, 30],
+  "zoom": 2
+}
+```
+
+## Step 2 — Add Earthquake Points
+
+Add a GeoJSON layer using the USGS live feed. Color points by magnitude.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-150, 30],
+  "zoom": 2,
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": {
+          "type": "continuous",
+          "attr": "mag",
+          "palette": "OrYel",
+          "domain": [0, 7]
+        },
+        "pointRadius": {
+          "type": "continuous",
+          "attr": "mag",
+          "domain": [0, 7],
+          "range": [2, 14]
+        },
+        "opacity": 0.85
+      },
+      "tooltip": ["place", "mag", "time"]
+    }
+  }
+}
+```
+
+`pointColor` maps magnitude 0–7 to the OrYel palette. `pointRadius` scales circle size so larger quakes are more visible.
+
+## Step 3 — Add a Legend
+
+Add a legend tied to the quakes layer so viewers understand the color scale.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-150, 30],
+  "zoom": 2,
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": {
+          "type": "continuous",
+          "attr": "mag",
+          "palette": "OrYel",
+          "domain": [0, 7]
+        },
+        "pointRadius": {
+          "type": "continuous",
+          "attr": "mag",
+          "domain": [0, 7],
+          "range": [2, 14]
+        },
+        "opacity": 0.85
+      },
+      "tooltip": ["place", "mag", "time"]
+    }
+  },
+  "legend": {
+    "layer": "quakes",
+    "title": "Magnitude",
+    "position": "bottom-left"
+  }
+}
+```
+
+## Step 4 — Add a Heatmap View
+
+Add a second layer showing the same data as a heatmap. Use the layer switcher to toggle between views.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-150, 30],
+  "zoom": 2,
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": {
+          "type": "continuous",
+          "attr": "mag",
+          "palette": "OrYel",
+          "domain": [0, 7]
+        },
+        "pointRadius": {
+          "type": "continuous",
+          "attr": "mag",
+          "domain": [0, 7],
+          "range": [2, 14]
+        },
+        "opacity": 0.85
+      },
+      "tooltip": ["place", "mag", "time"]
+    },
+    "quake-heat": {
+      "type": "heatmap",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "weight": "mag",
+      "radius": 25,
+      "intensity": 1.5,
+      "palette": "OrYel"
+    }
+  },
+  "controls": {
+    "zoom": true,
+    "layerSwitcher": true
+  }
+}
+```
+
+## Step 5 — Final Result
+
+Add controls and a summary widget.
+
+<LiveExample spec={{
+  basemap: "dark",
+  center: [-150, 30],
+  zoom: 2,
+  layers: {
+    quakes: {
+      type: "geojson",
+      data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      style: {
+        pointColor: {
+          type: "continuous",
+          attr: "mag",
+          palette: "OrYel",
+          domain: [0, 7],
+        },
+        pointRadius: {
+          type: "continuous",
+          attr: "mag",
+          domain: [0, 7],
+          range: [2, 14],
+        },
+        opacity: 0.85,
+      },
+      tooltip: ["place", "mag", "time"],
+    },
+    "quake-heat": {
+      type: "heatmap",
+      data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      weight: "mag",
+      radius: 25,
+      intensity: 1.5,
+      palette: "OrYel",
+    },
+  },
+  legend: {
+    layer: "quakes",
+    title: "Magnitude",
+    position: "bottom-left",
+  },
+  controls: {
+    zoom: true,
+    compass: true,
+    layerSwitcher: true,
+  },
+  widgets: {
+    info: {
+      title: "USGS Earthquakes",
+      description: "Past 7 days, all magnitudes",
+      position: "top-left",
+    },
+  },
+}} />
+
+```json
+{
+  "basemap": "dark",
+  "center": [-150, 30],
+  "zoom": 2,
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": {
+          "type": "continuous",
+          "attr": "mag",
+          "palette": "OrYel",
+          "domain": [0, 7]
+        },
+        "pointRadius": {
+          "type": "continuous",
+          "attr": "mag",
+          "domain": [0, 7],
+          "range": [2, 14]
+        },
+        "opacity": 0.85
+      },
+      "tooltip": ["place", "mag", "time"]
+    },
+    "quake-heat": {
+      "type": "heatmap",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "weight": "mag",
+      "radius": 25,
+      "intensity": 1.5,
+      "palette": "OrYel"
+    }
+  },
+  "legend": {
+    "layer": "quakes",
+    "title": "Magnitude",
+    "position": "bottom-left"
+  },
+  "controls": {
+    "zoom": true,
+    "compass": true,
+    "layerSwitcher": true
+  },
+  "widgets": {
+    "info": {
+      "title": "USGS Earthquakes",
+      "description": "Past 7 days, all magnitudes",
+      "position": "top-left"
+    }
+  }
+}
+```

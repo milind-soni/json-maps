@@ -19,6 +19,12 @@ export const docsNavigation: NavSection[] = [
     ],
   },
   {
+    title: "Tutorials",
+    items: [
+      { title: "Earthquake Visualization", href: "/docs/tutorials/earthquake-viz" },
+    ],
+  },
+  {
     title: "Spec Reference",
     items: [
       { title: "Basemap", href: "/docs/basemap" },
@@ -46,6 +52,12 @@ export const docsNavigation: NavSection[] = [
       { title: "useMap Hook", href: "/docs/use-map" },
       { title: "Component Slots", href: "/docs/component-slots" },
       { title: "Routing Providers", href: "/docs/routing-providers" },
+    ],
+  },
+  {
+    title: "Guides",
+    items: [
+      { title: "Recipes", href: "/docs/recipes" },
     ],
   },
   {

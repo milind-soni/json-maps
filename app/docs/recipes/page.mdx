@@ -1,0 +1,196 @@
+export const metadata = { title: "Recipes" }
+
+# Recipes
+
+Copy-paste snippets for common patterns.
+
+## Auto-Fit to Markers
+
+Omit `center` and `zoom`. The map fits all markers automatically.
+
+```json
+{
+  "markers": {
+    "a": { "coordinates": [-73.98, 40.75], "label": "NYC" },
+    "b": { "coordinates": [-118.24, 34.05], "label": "LA" },
+    "c": { "coordinates": [-87.62, 41.88], "label": "Chicago" }
+  }
+}
+```
+
+## Custom Basemap URL
+
+Use any raster tile URL as basemap with `"custom"` type.
+
+```json
+{
+  "basemap": {
+    "type": "custom",
+    "url": "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png",
+    "attribution": "Stadia Maps"
+  }
+}
+```
+
+## Dark Mode with Matching Controls
+
+Dark basemap with white-on-dark controls and search.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-73.98, 40.75],
+  "zoom": 13,
+  "controls": {
+    "zoom": true,
+    "compass": true,
+    "search": true,
+    "basemapSwitcher": true,
+    "position": "top-right"
+  }
+}
+```
+
+## Combine Heatmap + Points
+
+Show density and individual points from the same data source.
+
+```json
+{
+  "basemap": "dark",
+  "layers": {
+    "heat": {
+      "type": "heatmap",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "weight": "mag",
+      "radius": 25,
+      "palette": "OrYel"
+    },
+    "points": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": "#fff",
+        "pointRadius": 2,
+        "opacity": 0.5
+      },
+      "tooltip": ["place", "mag"]
+    }
+  }
+}
+```
+
+## Layer Switcher
+
+Toggle layer visibility with a positioned panel.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-122.4, 37.8],
+  "zoom": 11,
+  "layers": {
+    "buildings": {
+      "type": "geojson",
+      "data": "https://example.com/buildings.geojson",
+      "style": { "fillColor": "#3b82f6", "opacity": 0.6 }
+    },
+    "parks": {
+      "type": "geojson",
+      "data": "https://example.com/parks.geojson",
+      "style": { "fillColor": "#22c55e", "opacity": 0.6 }
+    }
+  },
+  "controls": {
+    "layerSwitcher": { "position": "top-left" }
+  }
+}
+```
+
+## Route with Markers
+
+Show a route between draggable markers.
+
+```json
+{
+  "basemap": "streets",
+  "markers": {
+    "start": {
+      "coordinates": [-73.9857, 40.7484],
+      "color": "#22c55e",
+      "label": "Start",
+      "draggable": true
+    },
+    "end": {
+      "coordinates": [-73.9712, 40.7831],
+      "color": "#ef4444",
+      "label": "End",
+      "draggable": true
+    }
+  },
+  "layers": {
+    "route": {
+      "type": "route",
+      "from": [-73.9857, 40.7484],
+      "to": [-73.9712, 40.7831],
+      "style": { "lineColor": "#3b82f6", "lineWidth": 4 }
+    }
+  }
+}
+```
+
+## Globe Projection
+
+Switch to globe view for world-scale data.
+
+```json
+{
+  "basemap": "dark",
+  "projection": "globe",
+  "zoom": 1.5,
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": {
+        "pointColor": {
+          "type": "continuous",
+          "attr": "mag",
+          "palette": "OrYel",
+          "domain": [0, 7]
+        },
+        "pointRadius": 3,
+        "opacity": 0.8
+      }
+    }
+  }
+}
+```
+
+## Widget Dashboard
+
+Stat cards positioned in different corners.
+
+```json
+{
+  "basemap": "dark",
+  "center": [-73.98, 40.75],
+  "zoom": 12,
+  "widgets": {
+    "total": {
+      "title": "Total Events",
+      "value": "1,247",
+      "position": "top-left"
+    },
+    "status": {
+      "title": "Status",
+      "rows": [
+        { "label": "Active", "value": "89", "color": "#22c55e" },
+        { "label": "Pending", "value": "34", "color": "#eab308" },
+        { "label": "Closed", "value": "1,124", "color": "#6b7280" }
+      ],
+      "position": "top-left"
+    }
+  }
+}
+```
