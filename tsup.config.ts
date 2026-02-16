@@ -13,8 +13,6 @@ export default defineConfig({
     "react",
     "react-dom",
     "maplibre-gl",
-    "lucide-react",
-    "lucide-react/dynamic",
     "zod",
   ],
   banner: {

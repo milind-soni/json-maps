@@ -6,7 +6,7 @@ import type {
   TooltipComponentProps,
   LayerTooltipComponentProps,
 } from "@/lib/spec";
-import { DynamicIcon } from "lucide-react/dynamic";
+import { MapIcon } from "./icons";
 
 export function DefaultMarker({ marker, color }: MarkerComponentProps) {
   const { icon, label } = marker;
@@ -22,8 +22,7 @@ export function DefaultMarker({ marker, color }: MarkerComponentProps) {
             boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
           }}
         >
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <DynamicIcon name={icon as any} size={16} color="#ffffff" strokeWidth={2.5} />
+          <MapIcon name={icon} size={16} color="#ffffff" strokeWidth={2.5} />
         </div>
       ) : (
         <div

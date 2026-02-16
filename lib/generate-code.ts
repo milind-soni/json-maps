@@ -122,7 +122,7 @@ export function generateExportFiles(spec: MapSpec): ExportFile[] {
             "react-dom": "^19.0.0",
             "json-maps": "^0.1.0",
             "maplibre-gl": "^5.0.0",
-            "lucide-react": "^0.400.0",
+
           },
           devDependencies: {
             typescript: "^5.0.0",

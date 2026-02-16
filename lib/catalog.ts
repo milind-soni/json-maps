@@ -21,7 +21,7 @@ const MARKER_FIELDS: Record<string, FieldDef> = {
   color: { description: 'hex color string (e.g. "#e74c3c")' },
   icon: {
     description:
-      'lucide icon name in kebab-case (e.g. "coffee", "hotel", "utensils", "landmark", "train", "plane", "hospital", "school", "church", "shopping-cart", "fuel", "parking-meter", "tree-pine", "mountain", "waves", "music", "camera", "heart", "star", "flag", "map-pin", "building-2", "warehouse", "factory", "tent", "bike", "ship", "bus", "car")',
+      'icon name in kebab-case. Supported: "map-pin", "star", "heart", "flag", "coffee", "utensils", "hotel", "building-2", "tree-pine", "mountain", "plane", "train", "car", "ship", "bus", "truck", "church", "shopping-cart", "camera", "landmark", "tent". Only use these exact names.',
   },
   label: { description: "text displayed below the marker" },
   tooltip: {
@@ -293,7 +293,7 @@ const BASE_RULES = [
   'Give markers descriptive ids like "eiffel-tower", "central-park", etc.',
   "When adding markers for landmarks, include a tooltip for hover and a rich popup object with title and description. Only add a label if the user explicitly asks for permanent text below markers.",
   "Use varied colors for different markers to make them distinguishable.",
-  'When markers represent specific categories (restaurants, hotels, parks, etc.), use the icon field with a relevant lucide icon name (kebab-case). For generic location pins, omit icon to use the default dot.',
+  'When markers represent specific categories (restaurants, hotels, parks, etc.), use the icon field with a supported icon name (kebab-case). For generic location pins, omit icon to use the default dot.',
   'For layers, use "/layers/<id>" to add GeoJSON layers. Use well-known public GeoJSON URLs when possible.',
   "When adding layers with data-driven color, always include the domain range for continuous palettes.",
   "Include tooltip arrays for layers so users can inspect features on hover.",
@@ -329,7 +329,7 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/center","value":[139.75,35.68]}
 {"op":"replace","path":"/zoom","value":11}
 {"op":"replace","path":"/pitch","value":45}
-{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","icon":"tower-control","tooltip":"Tokyo Tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
+{"op":"add","path":"/markers/tokyo-tower","value":{"coordinates":[139.7454,35.6586],"color":"#e74c3c","icon":"landmark","tooltip":"Tokyo Tower · Minato","popup":{"title":"Tokyo Tower","description":"333m tall communications and observation tower, inspired by the Eiffel Tower"}}}
 {"op":"add","path":"/markers/shibuya","value":{"coordinates":[139.7013,35.6580],"color":"#3498db","tooltip":"Shibuya Crossing · Shibuya","popup":{"title":"Shibuya Crossing","description":"World's busiest pedestrian crossing with up to 3,000 people per light change"}}}
 {"op":"add","path":"/markers/senso-ji","value":{"coordinates":[139.7966,35.7148],"color":"#f39c12","icon":"church","tooltip":"Senso-ji · Asakusa","popup":{"title":"Senso-ji","description":"Tokyo's oldest temple, built in 645 AD. The iconic Kaminarimon gate is a symbol of Asakusa."}}}`,
   },
