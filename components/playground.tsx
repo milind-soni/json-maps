@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  compressToEncodedURIComponent,
+  decompressFromEncodedURIComponent,
+} from "lz-string";
 import { MapRenderer } from "./map";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
@@ -18,16 +22,49 @@ const DEFAULT_SPEC: MapSpec = {
 };
 const DEFAULT_JSON = JSON.stringify(DEFAULT_SPEC, null, 2);
 
+function readSpecFromHash(): { json: string; spec: MapSpec } | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.slice(1); // remove #
+  if (!hash) return null;
+  try {
+    const raw = decompressFromEncodedURIComponent(hash);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return { json: JSON.stringify(parsed, null, 2), spec: parsed as MapSpec };
+  } catch {
+    return null;
+  }
+}
+
 type RightTab = "live render" | "static code";
 
 export function Playground() {
-  const [jsonText, setJsonText] = useState(DEFAULT_JSON);
-  const [spec, setSpec] = useState<MapSpec>(DEFAULT_SPEC);
+  const fromHash = useRef(readSpecFromHash());
+  const [jsonText, setJsonText] = useState(
+    fromHash.current?.json ?? DEFAULT_JSON
+  );
+  const [spec, setSpec] = useState<MapSpec>(
+    fromHash.current?.spec ?? DEFAULT_SPEC
+  );
   const [error, setError] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<RightTab>("live render");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [copied, setCopied] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleShare = useCallback(() => {
+    try {
+      const compressed = compressToEncodedURIComponent(jsonText);
+      const url = `${window.location.origin}${window.location.pathname}#${compressed}`;
+      window.history.replaceState(null, "", `#${compressed}`);
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }, [jsonText]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -105,6 +142,42 @@ export function Playground() {
               ))}
             </div>
             <div className="flex items-center gap-1">
+              {/* Share button */}
+              <button
+                onClick={handleShare}
+                className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Share"
+                title={copied ? "Copied!" : "Copy share link"}
+              >
+                {copied ? (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                )}
+              </button>
               {/* Export button */}
               <button
                 onClick={() => setShowExport(true)}

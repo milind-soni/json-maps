@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { compressToEncodedURIComponent } from "lz-string";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
 import { MapRenderer } from "./map";
@@ -474,6 +475,33 @@ export function Demo() {
                 ))}
               </div>
               <div className="flex items-center gap-1">
+                {/* Share button — opens playground with this spec */}
+                <button
+                  onClick={() => {
+                    const compressed = compressToEncodedURIComponent(
+                      JSON.stringify(currentSpec, null, 2)
+                    );
+                    window.open(`/playground#${compressed}`, "_blank");
+                  }}
+                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Share"
+                  title="Open in playground"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    <polyline points="15 3 21 3 21 9" />
+                    <line x1="10" y1="14" x2="21" y2="3" />
+                  </svg>
+                </button>
                 {/* Export button */}
                 <button
                   onClick={() => setShowExport(true)}
