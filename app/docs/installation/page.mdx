@@ -20,7 +20,17 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 ## Tailwind CSS
 
-The component uses Tailwind classes internally for markers, legends, and popups. Add the package to your Tailwind content paths:
+The component uses Tailwind classes internally for markers, legends, popups, and controls. Tell Tailwind to scan the package's dist files:
+
+**Tailwind v4** (CSS-based config):
+
+```css
+/* globals.css */
+@import "tailwindcss";
+@source "../node_modules/json-maps/dist";
+```
+
+**Tailwind v3** (JS config):
 
 ```js
 // tailwind.config.js
@@ -30,11 +40,24 @@ content: [
 ]
 ```
 
+## Next.js
+
+If you're using Next.js with Turbopack, add `transpilePackages` to your config:
+
+```ts
+// next.config.ts
+const nextConfig = {
+  transpilePackages: ["json-maps"],
+};
+export default nextConfig;
+```
+
 ## Usage
 
 ```tsx
+"use client";
+
 import { MapRenderer } from "json-maps";
-import "maplibre-gl/dist/maplibre-gl.css";
 
 const spec = {
   basemap: "streets",
@@ -51,9 +74,12 @@ No API keys required. Basemaps are served free by [CARTO](https://carto.com/).
 
 ## Dependencies
 
-- **[MapLibre GL](https://maplibre.org/)** — open-source map rendering engine
+| Package | Purpose | Size |
+|---|---|---|
+| **[maplibre-gl](https://maplibre.org/)** | Map rendering engine | peer dep |
+| **[React](https://react.dev/)** | UI framework | peer dep |
 
-- **[React](https://react.dev/)** — UI framework
+Icons are built-in (21 common map icons bundled as inline SVGs). No icon library needed.
 
 ## From Source
 

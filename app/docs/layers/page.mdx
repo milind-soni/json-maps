@@ -4,9 +4,9 @@ export const metadata = { title: "Layers" }
 
 # Layers
 
-Layers render GeoJSON data on the map — points, lines, and polygons with static or data-driven styling.
+Layers render data on the map — points, lines, and polygons with static or data-driven styling.
 
-For route lines, see [Routes](/docs/routes).
+Supported layer types: `geojson`, `parquet`, `route`, `heatmap`, `mvt`, and `raster`. For route lines, see [Routes](/docs/routes). For heatmaps, see [Heatmap](/docs/heatmap). For tile layers, see [Tile Layers](/docs/tile-layers).
 
 ## Basic Usage
 
@@ -123,6 +123,37 @@ A single GeoJSON source can contain mixed geometry types. The renderer automatic
   }
 }
 ```
+
+## GeoParquet Layers
+
+Load [GeoParquet](https://geoparquet.org/) files directly from a URL. The geometry column is auto-detected from GeoParquet metadata, and the map auto-fits to the data bounds.
+
+```json
+{
+  "layers": {
+    "buildings": {
+      "type": "parquet",
+      "data": "https://example.com/buildings.parquet",
+      "style": {
+        "fillColor": "#3b82f6",
+        "opacity": 0.7
+      }
+    }
+  }
+}
+```
+
+| Property | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"parquet"` | Yes | Layer type |
+| `data` | `string` | Yes | URL to a GeoParquet file |
+| `geometryColumn` | `string` | No | Geometry column name (auto-detected if omitted) |
+| `style` | `LayerStyle` | No | Same style system as GeoJSON layers |
+| `tooltip` | `string \| string[]` | No | Property names to show on hover (all columns if omitted) |
+| `cluster` | `boolean` | No | Enable point clustering |
+| `clusterOptions` | `ClusterOptions` | No | Clustering configuration |
+
+Parquet layers support zstd, brotli, gzip, lz4, and snappy compression. The file is fetched client-side and converted to GeoJSON internally.
 
 ## Data-Driven Color
 

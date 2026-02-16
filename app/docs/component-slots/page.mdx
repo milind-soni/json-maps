@@ -51,14 +51,30 @@ Any slot you don't provide uses the built-in default.
 
 ## Marker
 
-Renders the visual element for each marker on the map.
+Renders the visual element for each marker on the map. This is also how you use custom icon libraries — the default marker uses 21 built-in icons, but a custom Marker component can render any icon.
 
 ```tsx
 interface MarkerComponentProps {
   id: string;           // marker key from spec
-  marker: MarkerSpec;   // full marker spec
+  marker: MarkerSpec;   // full marker spec (includes icon, label, etc.)
   color: string;        // resolved color (defaults applied)
 }
+```
+
+**Example: Using a custom icon library**
+
+```tsx
+import { HeroIcon } from "@heroicons/react/24/solid";
+
+function CustomMarker({ marker, color }: MarkerComponentProps) {
+  return (
+    <div style={{ background: color, borderRadius: "50%", padding: 6 }}>
+      <HeroIcon name={marker.icon} className="w-4 h-4 text-white" />
+    </div>
+  );
+}
+
+<MapRenderer spec={spec} components={{ Marker: CustomMarker }} />
 ```
 
 ## Popup

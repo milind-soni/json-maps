@@ -35,7 +35,7 @@ Markers are named pins on the map with optional colors, icons, labels, tooltips,
 |---|---|---|---|
 | `coordinates` | `[lng, lat]` | Yes | Marker position |
 | `color` | `string` | No | Marker color (hex) |
-| `icon` | `string` | No | Lucide icon name in kebab-case (e.g. `"coffee"`, `"hotel"`, `"star"`) |
+| `icon` | `string` | No | Built-in icon name in kebab-case (see below) |
 | `label` | `string` | No | Text displayed below the marker |
 | `tooltip` | `string` | No | Short text shown on hover |
 | `popup` | `string \| PopupSpec` | No | Content shown when marker is clicked |
@@ -46,7 +46,7 @@ Markers are named pins on the map with optional colors, icons, labels, tooltips,
 Markers come in two visual styles:
 
 - **Dot** — default when no `icon` is set. A colored circle with a white border.
-- **Icon** — when `icon` is set. A rounded square with a white Lucide icon inside.
+- **Icon** — when `icon` is set. A colored circle with a white icon inside.
 
 ```json
 {
@@ -57,11 +57,52 @@ Markers come in two visual styles:
 }
 ```
 
-## Icons
+## Built-in Icons
 
-The `icon` field accepts any [Lucide](https://lucide.dev/) icon name in kebab-case:
+json-maps ships with 21 built-in icons (subset of [Lucide](https://lucide.dev/) as inline SVGs). No icon library dependency required.
 
-`"coffee"`, `"hotel"`, `"utensils"`, `"landmark"`, `"train"`, `"plane"`, `"hospital"`, `"school"`, `"shopping-cart"`, `"fuel"`, `"tree-pine"`, `"mountain"`, `"music"`, `"camera"`, `"heart"`, `"star"`, `"flag"`, `"map-pin"`, `"building-2"`, `"warehouse"`, `"bike"`, `"ship"`, `"bus"`, `"car"`, etc.
+| Icon | Name | Good for |
+|---|---|---|
+| 📍 | `map-pin` | Generic location |
+| ⭐ | `star` | Highlights, favorites |
+| ❤️ | `heart` | Liked places |
+| 🚩 | `flag` | Start/end points |
+| ☕ | `coffee` | Cafes |
+| 🍴 | `utensils` | Restaurants |
+| 🏨 | `hotel` | Hotels, lodging |
+| 🏢 | `building-2` | Offices, buildings |
+| 🌲 | `tree-pine` | Parks, nature |
+| ⛰️ | `mountain` | Mountains, hiking |
+| ✈️ | `plane` | Airports |
+| 🚂 | `train` | Train stations |
+| 🚗 | `car` | Parking, driving |
+| 🚌 | `bus` | Bus stops |
+| 🚛 | `truck` | Logistics, delivery |
+| 🚢 | `ship` | Ports, harbors |
+| ⛪ | `church` | Religious sites |
+| 🛒 | `shopping-cart` | Shopping |
+| 📷 | `camera` | Photo spots, landmarks |
+| 🏛️ | `landmark` | Monuments, government |
+| ⛺ | `tent` | Camping |
+
+### Custom Icons
+
+Need icons beyond the built-in set? Override the `Marker` component with your own that uses any icon library. See [Component Slots](/docs/component-slots).
+
+```tsx
+import { MapRenderer } from "json-maps";
+import { DynamicIcon } from "lucide-react/dynamic"; // or any icon lib
+
+function CustomMarker({ marker, color }) {
+  return (
+    <div style={{ background: color, borderRadius: "50%", padding: 6 }}>
+      <DynamicIcon name={marker.icon} size={16} color="white" />
+    </div>
+  );
+}
+
+<MapRenderer spec={spec} components={{ Marker: CustomMarker }} />
+```
 
 ## Tooltip vs Popup
 
