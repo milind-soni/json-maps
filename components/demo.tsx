@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { compressToEncodedURIComponent } from "lz-string";
+import posthog from "posthog-js";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
 import { MapRenderer } from "./map";
@@ -250,6 +251,7 @@ export function Demo() {
 
   const handleSubmit = useCallback(async () => {
     if (!userPrompt.trim() || apiStreaming) return;
+    posthog.capture("prompt_submitted", { prompt: userPrompt });
     setStreamLines([]);
     await send(userPrompt, { previousSpec: currentSpec });
   }, [userPrompt, apiStreaming, send, currentSpec]);
