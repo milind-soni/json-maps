@@ -9,12 +9,9 @@ export function Header() {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === "/playground") {
-      return pathname === "/playground";
-    }
-    if (href === "/docs") {
-      return pathname.startsWith("/docs");
-    }
+    if (href === "/playground") return pathname === "/playground";
+    if (href === "/examples") return pathname === "/examples";
+    if (href === "/docs") return pathname.startsWith("/docs");
     return false;
   };
 
@@ -40,6 +37,17 @@ export function Header() {
           >
             <span className="sm:hidden">Play</span>
             <span className="hidden sm:inline">Playground</span>
+          </Link>
+          <Link
+            href="/examples"
+            className={cn(
+              "text-sm transition-colors",
+              isActive("/examples")
+                ? "text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Examples
           </Link>
           <Link
             href="/docs"
