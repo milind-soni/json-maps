@@ -303,9 +303,11 @@ export function MapRenderer({
       attributionControl: false,
     });
 
-    // Apply globe projection if specified
+    // Apply globe projection if specified (must wait for style to load)
     if (spec.projection === "globe") {
-      map.setProjection({ type: "globe" });
+      const applyGlobe = () => map.setProjection({ type: "globe" });
+      if (map.isStyleLoaded()) applyGlobe();
+      else map.once("style.load", applyGlobe);
     }
 
     // Inject CSS to strip default MapLibre popup chrome
