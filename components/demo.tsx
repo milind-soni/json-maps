@@ -504,6 +504,32 @@ export function Demo() {
                     <line x1="10" y1="14" x2="21" y2="3" />
                   </svg>
                 </button>
+                {/* Embed button — opens clean map in new tab */}
+                <button
+                  onClick={() => {
+                    const compressed = compressToEncodedURIComponent(
+                      JSON.stringify(currentSpec, null, 2)
+                    );
+                    window.open(`/embed#${compressed}`, "_blank");
+                  }}
+                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Embed"
+                  title="Open embed view"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
+                  </svg>
+                </button>
                 {/* Export button */}
                 <button
                   onClick={() => setShowExport(true)}
