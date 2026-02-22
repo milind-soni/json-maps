@@ -4,21 +4,19 @@ import { MapRenderer } from "@/components/map";
 import { type MapSpec } from "@/lib/spec";
 import { compressToEncodedURIComponent } from "lz-string";
 
-type CardSize = "wide" | "tall" | "default";
-
 interface Example {
   title: string;
   description: string;
   spec: MapSpec;
-  size: CardSize;
 }
 
+// Order matters — layout uses index-based spans:
+// 0: col-span-2, 1: row-span-2, 4: col-span-2, 6: col-span-2 (Analytics)
 const EXAMPLES: Example[] = [
   {
     title: "Live Earthquakes",
-    size: "wide",
     description:
-      "Real-time USGS earthquake feed with magnitude-based color scale and tooltips.",
+      "Real-time USGS feed with magnitude color scale, legend, and search control.",
     spec: {
       basemap: "dark",
       center: [-120, 37],
@@ -40,11 +38,63 @@ const EXAMPLES: Example[] = [
           tooltip: ["place", "mag", "time"],
         },
       },
+      legend: {
+        magnitude: {
+          layer: "quakes",
+          title: "Magnitude",
+        },
+      },
+      controls: {
+        zoom: true,
+        search: true,
+      },
+    },
+  },
+  {
+    title: "Road Trip",
+    description:
+      "Multi-stop driving route from Mumbai to Goa along the western coast.",
+    spec: {
+      basemap: "streets",
+      center: [74.2, 16.5],
+      zoom: 7,
+      layers: {
+        route: {
+          type: "route",
+          from: [72.8777, 19.076],
+          to: [73.8278, 15.4909],
+          waypoints: [[73.8567, 18.5204]],
+          profile: "driving",
+          style: {
+            color: "#3b82f6",
+            width: 4,
+          },
+        },
+      },
+      markers: {
+        mumbai: {
+          coordinates: [72.8777, 19.076],
+          label: "Mumbai",
+          icon: "building-2",
+          color: "#3b82f6",
+        },
+        pune: {
+          coordinates: [73.8567, 18.5204],
+          label: "Pune",
+          icon: "coffee",
+          color: "#8b5cf6",
+        },
+        goa: {
+          coordinates: [73.8278, 15.4909],
+          label: "Goa",
+          icon: "tent",
+          color: "#22c55e",
+        },
+      },
     },
   },
   {
     title: "Tokyo Landmarks",
-    size: "default",
     description:
       "Markers with custom colors, popups, and a tilted night-mode camera.",
     spec: {
@@ -93,52 +143,7 @@ const EXAMPLES: Example[] = [
     },
   },
   {
-    title: "Road Trip",
-    size: "tall",
-    description:
-      "Multi-stop driving route from Mumbai to Goa along the western coast.",
-    spec: {
-      basemap: "streets",
-      center: [73.5, 16.5],
-      zoom: 7,
-      layers: {
-        route: {
-          type: "route",
-          from: [72.8777, 19.076],
-          to: [73.8278, 15.4909],
-          waypoints: [[73.8567, 18.5204]],
-          profile: "driving",
-          style: {
-            color: "#3b82f6",
-            width: 4,
-          },
-        },
-      },
-      markers: {
-        mumbai: {
-          coordinates: [72.8777, 19.076],
-          label: "Mumbai",
-          icon: "building-2",
-          color: "#3b82f6",
-        },
-        pune: {
-          coordinates: [73.8567, 18.5204],
-          label: "Pune",
-          icon: "coffee",
-          color: "#8b5cf6",
-        },
-        goa: {
-          coordinates: [73.8278, 15.4909],
-          label: "Goa",
-          icon: "tent",
-          color: "#22c55e",
-        },
-      },
-    },
-  },
-  {
     title: "Globe View",
-    size: "default",
     description:
       "World markers on a globe projection — zoom out to see the full Earth.",
     spec: {
@@ -187,36 +192,7 @@ const EXAMPLES: Example[] = [
     },
   },
   {
-    title: "Clustered Points",
-    size: "default",
-    description:
-      "Earthquake data with point clustering — zoom in to break apart clusters.",
-    spec: {
-      basemap: "light",
-      center: [-120, 37],
-      zoom: 3,
-      layers: {
-        quakes: {
-          type: "geojson",
-          data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson",
-          cluster: true,
-          clusterOptions: {
-            radius: 50,
-            maxZoom: 14,
-            colors: ["#22c55e", "#eab308", "#ef4444"],
-          },
-          style: {
-            pointColor: "#3b82f6",
-            pointRadius: 3,
-          },
-          tooltip: ["place", "mag"],
-        },
-      },
-    },
-  },
-  {
     title: "Heatmap",
-    size: "default",
     description:
       "Earthquake density as a heatmap — brighter areas have more seismic activity.",
     spec: {
@@ -230,32 +206,60 @@ const EXAMPLES: Example[] = [
           radius: 20,
           intensity: 0.6,
           opacity: 0.8,
-          palette: "Spectral",
+          palette: "OrYel",
         },
       },
     },
   },
   {
-    title: "Satellite Imagery",
-    size: "wide",
+    title: "Layer Controls",
     description:
-      "ESRI satellite raster tiles overlaid on the map — zoom into any location.",
+      "Toggle between heatmap and point layers with the built-in layer switcher and legend.",
     spec: {
-      center: [77.59, 12.97],
-      zoom: 14,
+      basemap: "dark",
+      center: [-120, 37],
+      zoom: 3,
       layers: {
-        satellite: {
-          type: "raster",
-          url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "seismic-heat": {
+          type: "heatmap",
+          data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson",
+          radius: 20,
+          intensity: 0.5,
+          opacity: 0.7,
+          palette: "Sunset",
+        },
+        "seismic-points": {
+          type: "geojson",
+          data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson",
+          style: {
+            pointColor: {
+              type: "continuous",
+              attr: "mag",
+              palette: "Emrld",
+              domain: [0, 7],
+            },
+            pointRadius: 3,
+          },
+          tooltip: ["place", "mag"],
+        },
+      },
+      controls: {
+        layerSwitcher: true,
+        zoom: true,
+        basemapSwitcher: true,
+      },
+      legend: {
+        mag: {
+          layer: "seismic-points",
+          title: "Magnitude",
         },
       },
     },
   },
   {
     title: "Analytics Dashboard",
-    size: "default",
     description:
-      "Markers with stat widgets and controls — a dashboard-style map layout.",
+      "Stat widgets, fullscreen control, and basemap switcher on a tilted map.",
     spec: {
       basemap: "dark",
       center: [77.59, 12.97],
@@ -294,7 +298,7 @@ const EXAMPLES: Example[] = [
         },
       },
       widgets: {
-        stats: {
+        overview: {
           position: "top-left",
           title: "Overview",
           value: "3",
@@ -308,6 +312,23 @@ const EXAMPLES: Example[] = [
       controls: {
         zoom: true,
         compass: true,
+        fullscreen: true,
+        basemapSwitcher: true,
+      },
+    },
+  },
+  {
+    title: "Satellite Imagery",
+    description:
+      "ESRI satellite raster tiles overlaid on the map.",
+    spec: {
+      center: [77.59, 12.97],
+      zoom: 14,
+      layers: {
+        satellite: {
+          type: "raster",
+          url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        },
       },
     },
   },
@@ -320,12 +341,6 @@ function openInPlayground(spec: MapSpec) {
   window.open(`/playground#${compressed}`, "_blank");
 }
 
-const sizeClasses: Record<CardSize, { card: string; map: string }> = {
-  wide: { card: "md:col-span-2", map: "h-72" },
-  tall: { card: "", map: "h-80" },
-  default: { card: "", map: "h-56" },
-};
-
 export default function ExamplesPage() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
@@ -335,18 +350,25 @@ export default function ExamplesPage() {
         the playground.
       </p>
 
-      <div className="grid md:grid-cols-2 gap-5 auto-rows-auto">
-        {EXAMPLES.map((example) => {
-          const s = sizeClasses[example.size];
+      <div className="grid grid-cols-1 md:grid-cols-3 md:grid-flow-dense gap-4">
+        {EXAMPLES.map((example, i) => {
+          const isWide = i === 0 || i === 4 || i === 6;
+          const isTall = i === 1;
           return (
             <div
               key={example.title}
-              className={`border border-border rounded-xl overflow-hidden flex flex-col ${s.card}`}
+              className={`group border border-border rounded-xl overflow-hidden flex flex-col transition-shadow hover:shadow-lg ${
+                isWide ? "md:col-span-2" : ""
+              } ${isTall ? "md:row-span-2" : ""}`}
             >
-              <div className={`${s.map} relative flex-shrink-0`}>
+              <div
+                className={`relative flex-shrink-0 ${
+                  isTall ? "flex-1 min-h-0" : isWide ? "h-64" : "h-48"
+                }`}
+              >
                 <MapRenderer spec={example.spec} />
               </div>
-              <div className="p-4 flex flex-col justify-between flex-1">
+              <div className="p-4 flex flex-col justify-between">
                 <div>
                   <h3 className="font-semibold mb-1">{example.title}</h3>
                   <p className="text-sm text-muted-foreground">
