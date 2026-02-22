@@ -4,15 +4,19 @@ import { MapRenderer } from "@/components/map";
 import { type MapSpec } from "@/lib/spec";
 import { compressToEncodedURIComponent } from "lz-string";
 
+type CardSize = "wide" | "tall" | "default";
+
 interface Example {
   title: string;
   description: string;
   spec: MapSpec;
+  size: CardSize;
 }
 
 const EXAMPLES: Example[] = [
   {
     title: "Live Earthquakes",
+    size: "wide",
     description:
       "Real-time USGS earthquake feed with magnitude-based color scale and tooltips.",
     spec: {
@@ -40,6 +44,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Tokyo Landmarks",
+    size: "default",
     description:
       "Markers with custom colors, popups, and a tilted night-mode camera.",
     spec: {
@@ -89,6 +94,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Road Trip",
+    size: "tall",
     description:
       "Multi-stop driving route from Mumbai to Goa along the western coast.",
     spec: {
@@ -134,6 +140,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Globe View",
+    size: "default",
     description:
       "World markers on a globe projection — zoom out to see the full Earth.",
     spec: {
@@ -183,6 +190,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Clustered Points",
+    size: "default",
     description:
       "Earthquake data with point clustering — zoom in to break apart clusters.",
     spec: {
@@ -210,6 +218,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Heatmap",
+    size: "default",
     description:
       "Earthquake density as a heatmap — brighter areas have more seismic activity.",
     spec: {
@@ -230,6 +239,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Satellite Imagery",
+    size: "wide",
     description:
       "ESRI satellite raster tiles overlaid on the map — zoom into any location.",
     spec: {
@@ -245,6 +255,7 @@ const EXAMPLES: Example[] = [
   },
   {
     title: "Analytics Dashboard",
+    size: "default",
     description:
       "Markers with stat widgets and controls — a dashboard-style map layout.",
     spec: {
@@ -311,6 +322,12 @@ function openInPlayground(spec: MapSpec) {
   window.open(`/playground#${compressed}`, "_blank");
 }
 
+const sizeClasses: Record<CardSize, { card: string; map: string }> = {
+  wide: { card: "md:col-span-2", map: "h-72" },
+  tall: { card: "md:row-span-2", map: "h-64 md:h-[calc(100%-5rem)]" },
+  default: { card: "", map: "h-56" },
+};
+
 export default function ExamplesPage() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
@@ -320,29 +337,34 @@ export default function ExamplesPage() {
         the playground.
       </p>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {EXAMPLES.map((example) => (
-          <div
-            key={example.title}
-            className="border border-border rounded-lg overflow-hidden group"
-          >
-            <div className="h-64 relative">
-              <MapRenderer spec={example.spec} />
+      <div className="grid md:grid-cols-2 gap-5 auto-rows-auto">
+        {EXAMPLES.map((example) => {
+          const s = sizeClasses[example.size];
+          return (
+            <div
+              key={example.title}
+              className={`border border-border rounded-xl overflow-hidden flex flex-col ${s.card}`}
+            >
+              <div className={`${s.map} relative flex-shrink-0`}>
+                <MapRenderer spec={example.spec} />
+              </div>
+              <div className="p-4 flex flex-col justify-between flex-1">
+                <div>
+                  <h3 className="font-semibold mb-1">{example.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {example.description}
+                  </p>
+                </div>
+                <button
+                  onClick={() => openInPlayground(example.spec)}
+                  className="text-xs font-mono text-primary hover:underline mt-3 text-left"
+                >
+                  Open in Playground &rarr;
+                </button>
+              </div>
             </div>
-            <div className="p-4">
-              <h3 className="font-semibold mb-1">{example.title}</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                {example.description}
-              </p>
-              <button
-                onClick={() => openInPlayground(example.spec)}
-                className="text-xs font-mono text-primary hover:underline"
-              >
-                Open in Playground &rarr;
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
