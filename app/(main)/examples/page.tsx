@@ -104,11 +104,9 @@ const EXAMPLES: Example[] = [
       layers: {
         route: {
           type: "route",
-          waypoints: [
-            [72.8777, 19.076],
-            [73.8567, 18.5204],
-            [73.8278, 15.4909],
-          ],
+          from: [72.8777, 19.076],
+          to: [73.8278, 15.4909],
+          waypoints: [[73.8567, 18.5204]],
           profile: "driving",
           style: {
             color: "#3b82f6",
@@ -324,7 +322,7 @@ function openInPlayground(spec: MapSpec) {
 
 const sizeClasses: Record<CardSize, { card: string; map: string }> = {
   wide: { card: "md:col-span-2", map: "h-72" },
-  tall: { card: "md:row-span-2", map: "h-64 md:h-[calc(100%-5rem)]" },
+  tall: { card: "", map: "h-80" },
   default: { card: "", map: "h-56" },
 };
 
