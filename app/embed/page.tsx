@@ -1,26 +1,30 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { decompressFromEncodedURIComponent } from "lz-string";
 import { MapRenderer } from "@/components/map";
 import { type MapSpec } from "@/lib/spec";
 
-function readSpecFromHash(): MapSpec | null {
-  if (typeof window === "undefined") return null;
-  const hash = window.location.hash.slice(1);
-  if (!hash) return null;
-  try {
-    const raw = decompressFromEncodedURIComponent(hash);
-    if (!raw) return null;
-    return JSON.parse(raw) as MapSpec;
-  } catch {
-    return null;
-  }
-}
-
 export default function EmbedPage() {
-  const fromHash = useRef(readSpecFromHash());
-  const [spec] = useState<MapSpec | null>(fromHash.current);
+  const [spec, setSpec] = useState<MapSpec | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      try {
+        const raw = decompressFromEncodedURIComponent(hash);
+        if (raw) setSpec(JSON.parse(raw) as MapSpec);
+      } catch {
+        // invalid hash
+      }
+    }
+    setReady(true);
+  }, []);
+
+  if (!ready) {
+    return <div className="h-screen w-screen bg-background" />;
+  }
 
   if (!spec) {
     return (
