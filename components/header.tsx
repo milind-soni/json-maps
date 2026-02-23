@@ -12,6 +12,7 @@ export function Header() {
     if (href === "/playground") return pathname === "/playground";
     if (href === "/examples") return pathname === "/examples";
     if (href === "/docs") return pathname.startsWith("/docs");
+    if (href === "/storytelling") return pathname === "/storytelling";
     return false;
   };
 
@@ -59,6 +60,18 @@ export function Header() {
             )}
           >
             Docs
+          </Link>
+          <Link
+            href="/storytelling"
+            className={cn(
+              "text-sm transition-colors",
+              isActive("/storytelling")
+                ? "text-primary font-medium"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <span className="sm:hidden">Stories</span>
+            <span className="hidden sm:inline">Storytelling</span>
           </Link>
           <a
             href="https://github.com/milind-soni/json-maps"
