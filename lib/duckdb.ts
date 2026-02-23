@@ -8,11 +8,10 @@ type AsyncDuckDB = any;
 let dbPromise: Promise<AsyncDuckDB> | null = null;
 const registeredTables = new Set<string>();
 
-const DUCKDB_CDN = "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.33.1-dev18.0/dist";
-
 async function initDuckDB(): Promise<AsyncDuckDB> {
-  // Load from CDN to avoid Turbopack/webpack WASM bundling issues
-  const duckdb = await import(/* webpackIgnore: true */ `${DUCKDB_CDN}/duckdb-browser.mjs`);
+  // Load from esm.sh to avoid Turbopack bundling issues — esm.sh auto-bundles apache-arrow
+  // @ts-ignore — runtime CDN import, not resolvable by TypeScript
+  const duckdb = await import(/* webpackIgnore: true */ "https://esm.sh/@duckdb/duckdb-wasm@1.32.0");
   const bundles = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle(bundles);
 
