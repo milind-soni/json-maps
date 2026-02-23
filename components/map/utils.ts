@@ -35,11 +35,17 @@ export function colorValueToExpression(color: ColorValue): any {
   if (color.type === "categorical") {
     if (!color.categories || color.categories.length === 0)
       return palette[0] ?? "#888888";
+    // Deduplicate categories — MapLibre requires unique branch labels
+    const seen = new Set<string>();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const expr: any[] = ["match", ["get", color.attr]];
-    for (let i = 0; i < color.categories.length; i++) {
-      expr.push(color.categories[i]);
-      expr.push(palette[i % palette.length]);
+    let colorIdx = 0;
+    for (const cat of color.categories) {
+      if (seen.has(cat)) continue;
+      seen.add(cat);
+      expr.push(cat);
+      expr.push(palette[colorIdx % palette.length]);
+      colorIdx++;
     }
     expr.push(color.nullColor ?? "#cccccc");
     return expr;
