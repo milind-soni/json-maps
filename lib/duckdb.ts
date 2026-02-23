@@ -79,6 +79,10 @@ async function ingestGeoJSON(
     for (const f of fc.features) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const row: Record<string, any> = { ...f.properties };
+      // Store raw geometry as JSON string for spatial queries (ST_GeomFromGeoJSON)
+      if (f.geometry) {
+        row.geometry = JSON.stringify(f.geometry);
+      }
       if (f.geometry && f.geometry.type === "Point") {
         const coords = (f.geometry as GeoJSON.Point).coordinates;
         row.lng = coords[0];
@@ -167,6 +171,15 @@ export async function executeQuery(
         .replace(/\$south/g, String(bounds.south))
         .replace(/\$north/g, String(bounds.north))
         .replace(/\$zoom/g, String(Math.round(bounds.zoom)));
+    }
+
+    // Auto-quote table names that contain special characters (e.g. hyphens)
+    for (const tableId of registeredTables) {
+      if (/[^a-zA-Z0-9_]/.test(tableId)) {
+        // Replace unquoted occurrences (word boundary match) with quoted version
+        const pattern = new RegExp(`(?<!")\\b${tableId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b(?!")`, "g");
+        query = query.replace(pattern, `"${tableId}"`);
+      }
     }
 
     const result = await conn.query(query);

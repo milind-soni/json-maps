@@ -1,5 +1,6 @@
 import { PALETTES } from "./palettes";
 import { BASEMAP_STYLES } from "./spec";
+import { generateRegistrySummary } from "./data-registry";
 
 /**
  * Catalog-driven system prompt generation.
@@ -200,7 +201,7 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
       sql: {
         description: "SQL query config — when set, DuckDB-WASM runs queries against layer data in-browser",
         children: {
-          query: { description: 'SQL query string. Table names = layer IDs. Use $west, $east, $south, $north, $zoom for viewport bounds. E.g. "SELECT COUNT(*) as count FROM quakes WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north"' },
+          query: { description: 'SQL query string. Table names = layer IDs (always double-quote them). Each table has all feature properties plus lng, lat, and geometry (GeoJSON string). Use $west, $east, $south, $north, $zoom for viewport bounds. DuckDB spatial is loaded — use ST_GeomFromGeoJSON(geometry) for spatial ops. IMPORTANT: for area/distance on lat/lng data, use ST_Area_Spheroid (returns m²) not ST_Area (returns degrees²). E.g. "SELECT COUNT(*) as count FROM \"quakes\" WHERE lng BETWEEN $west AND $east"' },
           refreshOn: { description: '"viewport" (re-runs on pan/zoom) or "once" (runs once on load). Default "once".' },
           debounce: { description: "debounce in ms for viewport queries. Default 0 (instant updates while panning)." },
         },
@@ -315,7 +316,7 @@ const BASE_RULES = [
   'IMPORTANT: When the user provides a URL containing "parquet" (either ending in .parquet OR with dtype_out_vector=parquet as a query parameter), ALWAYS use type "parquet". Keep the URL exactly as given — do not modify the URL, path, or query parameters. For Fused/udf.ai URLs with dtype_out_vector=parquet, use the full URL as-is. Do NOT set center or zoom for parquet layers — the map auto-fits to the data bounds after loading. The geometry column is auto-detected from GeoParquet metadata. Style, tooltip, and clustering work the same as GeoJSON layers.',
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
   'For widgets (stat cards / info overlays), use "/widgets/<id>". Include title (small label), value (big number), description (subtitle), and/or rows (key-value pairs). Use position to place them. Only add widgets when the user asks for dashboard-style overlays or stats on the map.',
-  'For SQL-powered widgets, add a sql field with query and refreshOn. Table names in the query must match layer IDs (e.g. "quakes" layer → FROM quakes). Use {{column}} templates in value/description/rows to display query results. Use refreshOn "viewport" for live-updating stats as the user pans/zooms, and $west/$east/$south/$north/$zoom for viewport filtering in WHERE clauses. DuckDB-WASM loads lazily — only when a widget has sql.',
+  'For SQL-powered widgets, add a sql field with query and refreshOn. Table names in the query must match layer IDs. IMPORTANT: Always double-quote table names in SQL (e.g. FROM "india-states", FROM "quakes") — layer IDs often contain hyphens which DuckDB interprets as minus. Use {{column}} templates in value/description/rows to display query results. Use refreshOn "viewport" for live-updating stats as the user pans/zooms, and $west/$east/$south/$north/$zoom for viewport filtering in WHERE clauses. DuckDB-WASM loads lazily — only when a widget has sql.',
 ];
 
 const COORDINATE_EXAMPLES = [
@@ -433,6 +434,10 @@ export function generateSystemPrompt(
   // Basemaps
   lines.push("Available basemaps:");
   lines.push(...formatBasemaps());
+  lines.push("");
+
+  // Data sources from registry
+  lines.push(generateRegistrySummary());
   lines.push("");
 
   // Rules

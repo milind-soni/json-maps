@@ -10,6 +10,7 @@ import type {
   ParquetLayerSpec,
   PMTilesLayerSpec,
 } from "@/lib/spec";
+import { resolveRegistryUrl } from "@/lib/data-registry";
 import { loadGeoParquet } from "@/lib/parquet-loader";
 import { layerDataCache } from "@/lib/layer-data-cache";
 import { dropTable } from "@/lib/duckdb";
@@ -57,10 +58,17 @@ export function addGeoJsonLayer(
     const isClustered = layer.cluster === true;
     const clOpts = layer.clusterOptions ?? {};
 
+    // Resolve registry: prefix
+    let resolvedData: string | GeoJSON.GeoJSON = layer.data as string | GeoJSON.GeoJSON;
+    if (typeof resolvedData === "string" && resolvedData.startsWith("registry:")) {
+      const result = resolveRegistryUrl(resolvedData);
+      if (result) resolvedData = result.url;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sourceOpts: any = {
       type: "geojson",
-      data: layer.data as string | GeoJSON.GeoJSON,
+      data: resolvedData,
     };
     if (isClustered) {
       sourceOpts.cluster = true;
@@ -71,10 +79,10 @@ export function addGeoJsonLayer(
     map.addSource(sourceId, sourceOpts);
 
     // Cache data for SQL widgets
-    if (typeof layer.data === "object") {
-      layerDataCache.setGeoJSON(id, layer.data as unknown as GeoJSON.FeatureCollection);
-    } else if (typeof layer.data === "string") {
-      fetch(layer.data).then((r) => r.json()).then((json) => {
+    if (typeof resolvedData === "object") {
+      layerDataCache.setGeoJSON(id, resolvedData as unknown as GeoJSON.FeatureCollection);
+    } else if (typeof resolvedData === "string") {
+      fetch(resolvedData).then((r) => r.json()).then((json) => {
         layerDataCache.setGeoJSON(id, json as GeoJSON.FeatureCollection);
       }).catch(() => { /* non-critical */ });
     }
