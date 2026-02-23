@@ -185,12 +185,19 @@ const WidgetRowSchema = z.object({
   color: z.string().optional(),
 });
 
+const SQLWidgetConfigSchema = z.object({
+  query: z.string().min(1),
+  refreshOn: z.enum(["viewport", "once"]).optional(),
+  debounce: z.number().min(0).optional(),
+});
+
 const WidgetSchema = z.object({
   position: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
   title: z.string().optional(),
   value: z.string().optional(),
   description: z.string().optional(),
   rows: z.array(WidgetRowSchema).optional(),
+  sql: SQLWidgetConfigSchema.optional(),
 });
 
 /* ---- Controls ---- */

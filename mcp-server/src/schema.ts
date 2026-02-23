@@ -233,13 +233,20 @@ const WidgetRowSchema = z.object({
   color: z.string().optional(),
 });
 
+const SQLWidgetConfigSchema = z.object({
+  query: z.string().describe("SQL query. Table names match layer IDs. Supports $west, $east, $south, $north, $zoom viewport variables."),
+  refreshOn: z.enum(["viewport", "once"]).optional().describe('"viewport" re-runs on pan/zoom, "once" runs once on load (default "once")'),
+  debounce: z.number().min(0).optional().describe("Debounce in ms for viewport queries (default 0)"),
+});
+
 const WidgetSchema = z.object({
   position: PositionSchema.optional().describe('Position (default "top-left")'),
   title: z.string().optional().describe("Small uppercase label"),
-  value: z.string().optional().describe('Large prominent number (e.g. "2,847")'),
-  description: z.string().optional().describe("Subtitle below the value"),
-  rows: z.array(WidgetRowSchema).optional().describe("Key-value rows in the card"),
-}).describe("Overlay stat card / info widget");
+  value: z.string().optional().describe('Large number or {{column}} template (e.g. "{{count}}")'),
+  description: z.string().optional().describe("Subtitle — supports {{column}} templates when sql is set"),
+  rows: z.array(WidgetRowSchema).optional().describe("Key-value rows — supports {{column}} templates"),
+  sql: SQLWidgetConfigSchema.optional().describe("SQL query config — runs DuckDB-WASM queries against layer data in-browser"),
+}).describe("Overlay stat card / info widget — optionally SQL-powered with live data from layers");
 
 /* ---- MapSpec ---- */
 

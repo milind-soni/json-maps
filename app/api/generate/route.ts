@@ -24,20 +24,26 @@ export async function POST(req: Request) {
 
   const stream = new ReadableStream({
     async start(controller) {
-      for await (const chunk of textStream) {
-        controller.enqueue(encoder.encode(chunk));
-      }
       try {
-        const usage = await result.usage;
-        const meta = JSON.stringify({
-          __meta: "usage",
-          promptTokens: usage.inputTokens,
-          completionTokens: usage.outputTokens,
-          totalTokens: usage.totalTokens,
-        });
-        controller.enqueue(encoder.encode(`\n${meta}\n`));
-      } catch {
-        // Usage not available
+        for await (const chunk of textStream) {
+          controller.enqueue(encoder.encode(chunk));
+        }
+        try {
+          const usage = await result.usage;
+          const meta = JSON.stringify({
+            __meta: "usage",
+            promptTokens: usage.inputTokens,
+            completionTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
+          });
+          controller.enqueue(encoder.encode(`\n${meta}\n`));
+        } catch {
+          // Usage not available
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[api/generate] Stream error:", msg);
+        controller.enqueue(encoder.encode(`\n{"__meta":"error","message":${JSON.stringify(msg)}}\n`));
       }
       controller.close();
     },

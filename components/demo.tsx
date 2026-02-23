@@ -134,10 +134,10 @@ const SIMULATION_STAGES: SimulationStage[] = [
 ];
 
 const EXAMPLE_PROMPTS = [
+  "Show earthquake dashboard with live stats",
   "Show recent earthquakes worldwide",
   "Fly to Paris with a tilted view",
   "Dark map of New York zoomed in",
-  "Show Mumbai from above",
 ];
 
 type Mode = "simulation" | "interactive";

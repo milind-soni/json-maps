@@ -11,45 +11,8 @@ interface Example {
 }
 
 // Order matters — layout uses index-based spans:
-// 0: col-span-2, 1: row-span-2, 4: col-span-2, 6: col-span-2 (Analytics)
+// 0: row-span-2 (Road Trip), 3: col-span-2, 5: col-span-2 (Analytics), 7: col-span-2 (Earthquakes)
 const EXAMPLES: Example[] = [
-  {
-    title: "Live Earthquakes",
-    description:
-      "Real-time USGS feed with magnitude color scale, legend, and search control.",
-    spec: {
-      basemap: "dark",
-      center: [-120, 37],
-      zoom: 3,
-      layers: {
-        quakes: {
-          type: "geojson",
-          data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
-          style: {
-            pointColor: {
-              type: "continuous",
-              attr: "mag",
-              palette: "OrYel",
-              domain: [0, 7],
-            },
-            pointRadius: 4,
-            opacity: 0.85,
-          },
-          tooltip: ["place", "mag", "time"],
-        },
-      },
-      legend: {
-        magnitude: {
-          layer: "quakes",
-          title: "Magnitude",
-        },
-      },
-      controls: {
-        zoom: true,
-        search: true,
-      },
-    },
-  },
   {
     title: "Road Trip",
     description:
@@ -332,6 +295,55 @@ const EXAMPLES: Example[] = [
       },
     },
   },
+  {
+    title: "Live Earthquakes",
+    description:
+      "Real-time USGS feed with magnitude color scale, legend, and live SQL stats that update as you pan.",
+    spec: {
+      basemap: "dark",
+      center: [-120, 37],
+      zoom: 3,
+      layers: {
+        quakes: {
+          type: "geojson",
+          data: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+          style: {
+            pointColor: {
+              type: "continuous",
+              attr: "mag",
+              palette: "OrYel",
+              domain: [0, 7],
+            },
+            pointRadius: 4,
+            opacity: 0.85,
+          },
+          tooltip: ["place", "mag", "time"],
+        },
+      },
+      legend: {
+        magnitude: {
+          layer: "quakes",
+          title: "Magnitude",
+        },
+      },
+      widgets: {
+        stats: {
+          position: "top-left",
+          title: "Earthquakes in View",
+          sql: {
+            query:
+              "SELECT COUNT(*) as count, ROUND(AVG(mag),1) as avg_mag, ROUND(MAX(mag),1) as max_mag FROM quakes WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north",
+            refreshOn: "viewport",
+          },
+          value: "{{count}}",
+          description: "Avg: {{avg_mag}} · Max: {{max_mag}}",
+        },
+      },
+      controls: {
+        zoom: true,
+      },
+    },
+  },
 ];
 
 function openInPlayground(spec: MapSpec) {
@@ -352,8 +364,8 @@ export default function ExamplesPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 md:grid-flow-dense gap-4">
         {EXAMPLES.map((example, i) => {
-          const isWide = i === 0 || i === 4 || i === 6;
-          const isTall = i === 1;
+          const isWide = i === 3 || i === 5 || i === 7;
+          const isTall = i === 0;
           return (
             <div
               key={example.title}

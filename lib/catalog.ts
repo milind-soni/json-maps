@@ -197,6 +197,14 @@ const SPEC_FIELDS: Record<string, FieldDef> = {
       rows: {
         description: "array of { label, value, color? } key-value rows displayed in the card",
       },
+      sql: {
+        description: "SQL query config — when set, DuckDB-WASM runs queries against layer data in-browser",
+        children: {
+          query: { description: 'SQL query string. Table names = layer IDs. Use $west, $east, $south, $north, $zoom for viewport bounds. E.g. "SELECT COUNT(*) as count FROM quakes WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north"' },
+          refreshOn: { description: '"viewport" (re-runs on pan/zoom) or "once" (runs once on load). Default "once".' },
+          debounce: { description: "debounce in ms for viewport queries. Default 0 (instant updates while panning)." },
+        },
+      },
     },
   },
   controls: {
@@ -307,6 +315,7 @@ const BASE_RULES = [
   'IMPORTANT: When the user provides a URL containing "parquet" (either ending in .parquet OR with dtype_out_vector=parquet as a query parameter), ALWAYS use type "parquet". Keep the URL exactly as given — do not modify the URL, path, or query parameters. For Fused/udf.ai URLs with dtype_out_vector=parquet, use the full URL as-is. Do NOT set center or zoom for parquet layers — the map auto-fits to the data bounds after loading. The geometry column is auto-detected from GeoParquet metadata. Style, tooltip, and clustering work the same as GeoJSON layers.',
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
   'For widgets (stat cards / info overlays), use "/widgets/<id>". Include title (small label), value (big number), description (subtitle), and/or rows (key-value pairs). Use position to place them. Only add widgets when the user asks for dashboard-style overlays or stats on the map.',
+  'For SQL-powered widgets, add a sql field with query and refreshOn. Table names in the query must match layer IDs (e.g. "quakes" layer → FROM quakes). Use {{column}} templates in value/description/rows to display query results. Use refreshOn "viewport" for live-updating stats as the user pans/zooms, and $west/$east/$south/$north/$zoom for viewport filtering in WHERE clauses. DuckDB-WASM loads lazily — only when a widget has sql.',
 ];
 
 const COORDINATE_EXAMPLES = [
@@ -371,6 +380,15 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/zoom","value":13}
 {"op":"add","path":"/layers/overture-buildings","value":{"type":"mvt","url":"https://unstable.udf.ai/fsh_2hMoO790LkKZoVGGytJRfG/run/tiles/{z}/{x}/{y}?dtype_out_vector=mvt","sourceLayer":"udf","style":{"fillColor":"#3b82f6","lineColor":"#1e3a5f","opacity":0.6},"tooltip":["name","class","subtype"]}}
 {"op":"replace","path":"/controls","value":{"zoom":true,"layerSwitcher":true}}`,
+  },
+  {
+    prompt: "Show earthquake dashboard with live stats",
+    output: `{"op":"replace","path":"/basemap","value":"dark"}
+{"op":"replace","path":"/center","value":[-120,37]}
+{"op":"replace","path":"/zoom","value":3}
+{"op":"add","path":"/layers/quakes","value":{"type":"geojson","data":"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson","style":{"pointColor":{"type":"continuous","attr":"mag","palette":"OrYel","domain":[0,8]},"pointRadius":4,"opacity":0.8},"tooltip":["place","mag","time"]}}
+{"op":"add","path":"/widgets/stats","value":{"position":"top-left","title":"Earthquakes in View","sql":{"query":"SELECT COUNT(*) as count, ROUND(AVG(mag),1) as avg_mag, ROUND(MAX(mag),1) as max_mag FROM quakes WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north","refreshOn":"viewport"},"value":"{{count}}","description":"Avg: {{avg_mag}} · Max: {{max_mag}}"}}
+{"op":"add","path":"/legend/quake-legend","value":{"layer":"quakes","title":"Magnitude"}}`,
   },
   {
     prompt: "Show this https://data.source.coop/fiboa/us-usda-cropland/us_usda_cropland.pmtiles",

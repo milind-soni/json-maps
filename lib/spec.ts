@@ -224,12 +224,33 @@ export interface WidgetRowSpec {
   color?: string;
 }
 
+export interface SQLWidgetConfig {
+  /** SQL query. Table names match layer IDs. Supports $west, $east, $south, $north, $zoom. */
+  query: string;
+  /** "viewport" re-runs on pan/zoom, "once" runs once on load. Default "once". */
+  refreshOn?: "viewport" | "once";
+  /** Debounce in ms for viewport queries. Default 0 (instant). */
+  debounce?: number;
+}
+
 export interface WidgetSpec {
   position?: ControlPosition;
   title?: string;
+  /** Supports {{column}} templates when sql is set */
   value?: string;
+  /** Supports {{column}} templates when sql is set */
   description?: string;
   rows?: WidgetRowSpec[];
+  /** SQL query config. When present, DuckDB-WASM is lazy-loaded. */
+  sql?: SQLWidgetConfig;
+}
+
+export interface ViewportBounds {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+  zoom: number;
 }
 
 /* ---- Map spec ---- */

@@ -4,7 +4,7 @@ import { Fragment, useEffect, useRef, useCallback, useState, useMemo } from "rea
 import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { MapRendererProps, MarkerSpec } from "@/lib/spec";
+import type { MapRendererProps, MarkerSpec, ViewportBounds } from "@/lib/spec";
 import { resolveBasemapStyle } from "@/lib/spec";
 import { osrmProvider } from "@/lib/routing";
 
@@ -72,6 +72,9 @@ export function MapRenderer({
 
   // Map load state for useMap hook
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Viewport bounds for SQL widgets
+  const [viewportBounds, setViewportBounds] = useState<ViewportBounds | null>(null);
 
   // Flag to suppress onViewportChange during programmatic moves (flyTo, fitBounds)
   const internalMoveRef = useRef(false);
@@ -318,7 +321,19 @@ export function MapRenderer({
     styleEl.textContent = `.maplibregl-popup-content{background:transparent!important;box-shadow:none!important;padding:0!important;border-radius:0!important}.maplibregl-popup-tip{display:none!important}`;
     containerRef.current.appendChild(styleEl);
 
-    // Viewport change callback — fires on user-initiated moves only
+    // Bounds tracking for SQL widgets (fires during pan/zoom for responsiveness)
+    map.on("move", () => {
+      const b = map.getBounds();
+      setViewportBounds({
+        west: b.getWest(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        north: b.getNorth(),
+        zoom: map.getZoom(),
+      });
+    });
+
+    // Viewport change callback (fires once after move completes)
     map.on("moveend", () => {
       if (internalMoveRef.current) return;
       const c = map.getCenter();
@@ -366,6 +381,16 @@ export function MapRenderer({
           });
         }
       }
+      // Set initial viewport bounds for SQL widgets
+      const ib = map.getBounds();
+      setViewportBounds({
+        west: ib.getWest(),
+        south: ib.getSouth(),
+        east: ib.getEast(),
+        north: ib.getNorth(),
+        zoom: map.getZoom(),
+      });
+
       syncLayersRef.current();
     });
 
@@ -521,7 +546,7 @@ export function MapRenderer({
               <MapLegend key={id} legendSpec={leg} layerSpec={geoLayer} dark={spec.basemap === "dark"} />
             );
           })}
-        {spec.widgets && <MapWidgets widgets={spec.widgets} dark={spec.basemap === "dark"} />}
+        {spec.widgets && <MapWidgets widgets={spec.widgets} dark={spec.basemap === "dark"} bounds={viewportBounds} />}
         {children}
       </div>
       {/* Marker portals */}

@@ -11,6 +11,8 @@ import type {
   PMTilesLayerSpec,
 } from "@/lib/spec";
 import { loadGeoParquet } from "@/lib/parquet-loader";
+import { layerDataCache } from "@/lib/layer-data-cache";
+import { dropTable } from "@/lib/duckdb";
 import type { RoutingProvider } from "@/lib/routing";
 import { colorValueToExpression, sizeValueToExpression } from "./utils";
 
@@ -67,6 +69,15 @@ export function addGeoJsonLayer(
       sourceOpts.clusterMinPoints = clOpts.minPoints ?? 2;
     }
     map.addSource(sourceId, sourceOpts);
+
+    // Cache data for SQL widgets
+    if (typeof layer.data === "object") {
+      layerDataCache.setGeoJSON(id, layer.data as unknown as GeoJSON.FeatureCollection);
+    } else if (typeof layer.data === "string") {
+      fetch(layer.data).then((r) => r.json()).then((json) => {
+        layerDataCache.setGeoJSON(id, json as GeoJSON.FeatureCollection);
+      }).catch(() => { /* non-critical */ });
+    }
 
     // Fill layer (polygons)
     const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
@@ -643,6 +654,10 @@ export function addParquetLayer(
       deps.pendingRouteFetchRef.current.delete(id);
       if (deps.mapRef.current !== map) return;
 
+      // Cache for SQL widgets
+      layerDataCache.setGeoJSON(id, geojson);
+      layerDataCache.setParquetURL(id, layer.data);
+
       // Auto-tooltip: show all property columns when tooltip is not specified
       let tooltip = layer.tooltip;
       if (!tooltip && geojson.features.length > 0) {
@@ -888,4 +903,8 @@ export function removeLayer(map: maplibregl.Map, id: string, deps: LayerDeps) {
   if (map.getSource(sourceId)) {
     try { map.removeSource(sourceId); } catch { /* layer still attached — safe to ignore, will be cleaned up */ }
   }
+
+  // Cleanup SQL widget data
+  layerDataCache.remove(id);
+  dropTable(id);
 }

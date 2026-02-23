@@ -6,8 +6,10 @@ import type {
   ContinuousColor,
   CategoricalColor,
   WidgetSpec,
+  ViewportBounds,
 } from "@/lib/spec";
 import { PALETTES } from "@/lib/palettes";
+import { useSQLWidget } from "@/hooks/use-sql-widget";
 import { POSITION_CLASSES } from "./utils";
 
 /* ------------------------------------------------------------------ */
@@ -160,7 +162,48 @@ function MapWidgetCard({ widget, dark }: { widget: WidgetSpec; dark: boolean }) 
   );
 }
 
-export function MapWidgets({ widgets, dark }: { widgets: Record<string, WidgetSpec>; dark: boolean }) {
+function SQLWidgetCard({
+  widget,
+  dark,
+  bounds,
+}: {
+  widget: WidgetSpec;
+  dark: boolean;
+  bounds: ViewportBounds | null;
+}) {
+  const { resolvedValue, resolvedDescription, resolvedRows, isInitializing, error } =
+    useSQLWidget(widget, bounds);
+
+  const resolvedWidget: WidgetSpec = {
+    ...widget,
+    value: resolvedValue ?? widget.value,
+    description: error ? `SQL error: ${error}` : (resolvedDescription ?? widget.description),
+    rows: resolvedRows ?? widget.rows,
+  };
+
+  return (
+    <div className="relative">
+      <MapWidgetCard widget={resolvedWidget} dark={dark} />
+      {isInitializing && (
+        <div className="absolute top-2 right-2">
+          <div
+            className={`w-3 h-3 rounded-full border-[1.5px] border-t-transparent animate-spin ${dark ? "border-gray-500" : "border-gray-400"}`}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MapWidgets({
+  widgets,
+  dark,
+  bounds,
+}: {
+  widgets: Record<string, WidgetSpec>;
+  dark: boolean;
+  bounds?: ViewportBounds | null;
+}) {
   // Group widgets by position so they stack instead of overlapping
   const grouped: Record<string, Array<[string, WidgetSpec]>> = {};
   for (const [id, widget] of Object.entries(widgets)) {
@@ -176,9 +219,13 @@ export function MapWidgets({ widgets, dark }: { widgets: Record<string, WidgetSp
         const isBottom = position.startsWith("bottom");
         return (
           <div key={position} className={`absolute ${posClass} z-10 flex flex-col ${isBottom ? "items-start flex-col-reverse" : "items-start"} gap-2`}>
-            {items.map(([id, widget]) => (
-              <MapWidgetCard key={id} widget={widget} dark={dark} />
-            ))}
+            {items.map(([id, widget]) =>
+              widget.sql ? (
+                <SQLWidgetCard key={id} widget={widget} dark={dark} bounds={bounds ?? null} />
+              ) : (
+                <MapWidgetCard key={id} widget={widget} dark={dark} />
+              ),
+            )}
           </div>
         );
       })}

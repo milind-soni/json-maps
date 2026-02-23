@@ -103,6 +103,37 @@ Categorical: Bold, Pastel, Antique, Vivid, Prism, Safe
 - layerSwitcher: layer visibility panel
 - position: "top-left" | "top-right" | "bottom-left" | "bottom-right"
 
+## SQL Widgets (DuckDB-WASM)
+
+Widgets can run SQL queries against layer data in-browser using DuckDB-WASM. Add a sql field to any widget:
+- sql.query: SQL string. Table names = layer IDs. Use $west, $east, $south, $north, $zoom for viewport bounds.
+- sql.refreshOn: "viewport" (re-runs on pan/zoom) or "once" (runs once on load, default)
+- sql.debounce: ms delay for viewport queries (default 0 — instant updates while panning)
+- Use {{column}} templates in value, description, and rows to display query results from row 0.
+- DuckDB-WASM loads lazily — only when a widget has sql. GeoJSON features get lng/lat columns extracted from Point geometry.
+
+Example:
+{
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+    }
+  },
+  "widgets": {
+    "stats": {
+      "position": "top-left",
+      "title": "Earthquakes in View",
+      "sql": {
+        "query": "SELECT COUNT(*) as count, ROUND(AVG(mag),1) as avg_mag FROM quakes WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north",
+        "refreshOn": "viewport"
+      },
+      "value": "{{count}}",
+      "description": "Avg magnitude: {{avg_mag}}"
+    }
+  }
+}
+
 ## Common Coordinates
 
 - New York: [-73.98, 40.75]
@@ -144,6 +175,45 @@ Route:
   "zoom": 14,
   "layers": {
     "route": { "type": "route", "from": [-73.9855, 40.758], "to": [-73.9654, 40.7829], "profile": "driving", "style": { "color": "#3b82f6", "width": 4 } }
+  }
+}
+
+PMTiles with categorical styling:
+{
+  "center": [-98, 39],
+  "zoom": 5,
+  "layers": {
+    "cropland": {
+      "type": "pmtiles",
+      "url": "https://data.source.coop/fiboa/us-usda-cropland/us_usda_cropland.pmtiles",
+      "sourceLayer": "us_usda_cropland",
+      "style": { "fillColor": { "type": "categorical", "attr": "crop:name", "palette": "Bold", "categories": ["Corn", "Soybeans", "Winter Wheat", "Cotton", "Alfalfa"] }, "opacity": 0.7 },
+      "tooltip": ["crop:name"]
+    }
+  }
+}
+
+SQL widget with live viewport stats:
+{
+  "basemap": "dark",
+  "center": [-120, 37],
+  "zoom": 3,
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson",
+      "style": { "pointColor": { "type": "continuous", "attr": "mag", "palette": "OrYel", "domain": [0, 8] } },
+      "tooltip": ["place", "mag"]
+    }
+  },
+  "widgets": {
+    "stats": {
+      "position": "top-left",
+      "title": "Earthquakes in View",
+      "sql": { "query": "SELECT COUNT(*) as count, ROUND(AVG(mag),1) as avg_mag FROM quakes WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north", "refreshOn": "viewport" },
+      "value": "{{count}}",
+      "description": "Avg magnitude: {{avg_mag}}"
+    }
   }
 }
 `;
