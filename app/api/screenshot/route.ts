@@ -24,12 +24,12 @@ export async function GET(request: NextRequest) {
   }
 
   const width = Math.min(
-    Math.max(parseInt(request.nextUrl.searchParams.get("width") ?? "800", 10) || 800, 200),
-    1920,
+    Math.max(parseInt(request.nextUrl.searchParams.get("width") ?? "1280", 10) || 1280, 200),
+    3840,
   );
   const height = Math.min(
-    Math.max(parseInt(request.nextUrl.searchParams.get("height") ?? "450", 10) || 450, 200),
-    1080,
+    Math.max(parseInt(request.nextUrl.searchParams.get("height") ?? "720", 10) || 720, 200),
+    2160,
   );
   const scale = Math.min(
     Math.max(parseInt(request.nextUrl.searchParams.get("scale") ?? "1", 10) || 1, 1),
