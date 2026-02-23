@@ -22,9 +22,36 @@ function isNonEmptySpec(spec: unknown): spec is MapSpec {
   return Object.keys(s).length > 0;
 }
 
+interface LayerSchemaInfo {
+  columns: Record<string, string>;
+  sampleValues: Record<string, unknown[]>;
+  rowCount: number;
+}
+
+function formatSchemas(schemas: Record<string, LayerSchemaInfo>): string {
+  const lines: string[] = [
+    "LAYER DATA SCHEMA (use these column names for SQL queries, tooltips, and style expressions):",
+  ];
+  for (const [id, schema] of Object.entries(schemas)) {
+    lines.push(`  Table "${id}" (${schema.rowCount} rows):`);
+    for (const [col, type] of Object.entries(schema.columns)) {
+      const samples = schema.sampleValues[col]
+        ?.slice(0, 2)
+        .map((v) => JSON.stringify(v))
+        .join(", ");
+      lines.push(`    ${col}: ${type}${samples ? ` (e.g. ${samples})` : ""}`);
+    }
+  }
+  lines.push(
+    "  NOTE: For viewport filtering in SQL, use: WHERE lng BETWEEN $west AND $east AND lat BETWEEN $south AND $north",
+  );
+  return lines.join("\n");
+}
+
 export function buildUserPrompt(
   prompt: string,
   previousSpec?: MapSpec | null,
+  layerSchemas?: Record<string, LayerSchemaInfo> | null,
 ): string {
   const userText = prompt.slice(0, MAX_PROMPT_LENGTH);
 
@@ -35,6 +62,12 @@ export function buildUserPrompt(
       "CURRENT MAP STATE (already loaded, DO NOT recreate existing fields):",
     );
     parts.push(JSON.stringify(previousSpec));
+
+    if (layerSchemas && Object.keys(layerSchemas).length > 0) {
+      parts.push("");
+      parts.push(formatSchemas(layerSchemas));
+    }
+
     parts.push("");
     parts.push(`USER REQUEST: ${userText}`);
     parts.push("");

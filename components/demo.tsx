@@ -10,6 +10,7 @@ import { ExportModal } from "./export-modal";
 import { type MapSpec } from "@/lib/spec";
 import { generateStaticCode } from "@/lib/generate-code";
 import { useMapStream } from "@/lib/use-map-stream";
+import { layerDataCache } from "@/lib/layer-data-cache";
 
 const SIMULATION_PROMPT = "Show me Tokyo at night with landmarks";
 
@@ -274,7 +275,11 @@ export function Demo() {
     if (!userPrompt.trim() || apiStreaming) return;
     posthog.capture("prompt_submitted", { prompt: userPrompt });
     setStreamLines([]);
-    await send(userPrompt, { previousSpec: currentSpec });
+    const schemas = layerDataCache.getSchemas();
+    await send(userPrompt, {
+      previousSpec: currentSpec,
+      layerSchemas: Object.keys(schemas).length > 0 ? schemas : undefined,
+    });
   }, [userPrompt, apiStreaming, send, currentSpec]);
 
   const handleExampleClick = useCallback(

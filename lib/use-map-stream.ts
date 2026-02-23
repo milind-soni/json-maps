@@ -105,7 +105,7 @@ export interface UseMapStreamReturn {
   error: Error | null;
   usage: TokenUsage | null;
   rawLines: string[];
-  send: (prompt: string, context?: { previousSpec?: MapSpec }) => Promise<void>;
+  send: (prompt: string, context?: { previousSpec?: MapSpec; layerSchemas?: Record<string, unknown> }) => Promise<void>;
   clear: () => void;
 }
 
@@ -127,7 +127,7 @@ export function useMapStream({
   }, []);
 
   const send = useCallback(
-    async (prompt: string, context?: { previousSpec?: MapSpec }) => {
+    async (prompt: string, context?: { previousSpec?: MapSpec; layerSchemas?: Record<string, unknown> }) => {
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
 

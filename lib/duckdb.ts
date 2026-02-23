@@ -1,6 +1,6 @@
 import type { ViewportBounds } from "./spec";
 import type { SQLQueryResult } from "./sql-template";
-import { layerDataCache } from "./layer-data-cache";
+import { layerDataCache, type LayerSchema } from "./layer-data-cache";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AsyncDuckDB = any;
@@ -193,6 +193,71 @@ export async function executeQuery(
   } finally {
     await conn.close();
   }
+}
+
+/** Get schemas for all registered tables using DuckDB DESCRIBE, or fall back to GeoJSON inspection */
+export async function getTableSchemas(): Promise<Record<string, LayerSchema>> {
+  // If DuckDB isn't initialized or no tables registered, fall back to GeoJSON inspection
+  if (!dbPromise || registeredTables.size === 0) {
+    return layerDataCache.getSchemas();
+  }
+
+  const schemas: Record<string, LayerSchema> = {};
+  const db = await dbPromise;
+  const conn = await db.connect();
+
+  try {
+    for (const tableId of registeredTables) {
+      try {
+        // Get column names and types
+        const descResult = await conn.query(`DESCRIBE "${tableId}"`);
+        const columns: Record<string, string> = {};
+        const numRows = descResult.numRows;
+        const nameVec = descResult.getChild("column_name");
+        const typeVec = descResult.getChild("column_type");
+        for (let i = 0; i < numRows; i++) {
+          const name = nameVec?.get(i);
+          const type = typeVec?.get(i);
+          if (name) columns[name] = String(type ?? "unknown");
+        }
+
+        // Get sample values
+        const sampleResult = await conn.query(`SELECT * FROM "${tableId}" LIMIT 3`);
+        const sampleValues: Record<string, unknown[]> = {};
+        const sampleCols = sampleResult.schema.fields.map((f: { name: string }) => f.name);
+        for (let i = 0; i < sampleResult.numRows; i++) {
+          for (const col of sampleCols) {
+            if (!sampleValues[col]) sampleValues[col] = [];
+            const vec = sampleResult.getChild(col);
+            const val = vec?.get(i);
+            sampleValues[col].push(typeof val === "bigint" ? Number(val) : val);
+          }
+        }
+
+        // Get row count
+        const countResult = await conn.query(`SELECT COUNT(*) as cnt FROM "${tableId}"`);
+        const cnt = countResult.getChild("cnt")?.get(0);
+
+        schemas[tableId] = {
+          columns,
+          sampleValues,
+          rowCount: typeof cnt === "bigint" ? Number(cnt) : (cnt ?? 0),
+        };
+      } catch {
+        // Skip tables that fail to describe
+      }
+    }
+  } finally {
+    await conn.close();
+  }
+
+  // Merge in any layers that are in cache but not yet in DuckDB
+  const cacheSchemas = layerDataCache.getSchemas();
+  for (const [id, schema] of Object.entries(cacheSchemas)) {
+    if (!schemas[id]) schemas[id] = schema;
+  }
+
+  return schemas;
 }
 
 export function dropTable(layerId: string): void {

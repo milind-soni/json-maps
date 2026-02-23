@@ -10,7 +10,7 @@ const SYSTEM_PROMPT = generateSystemPrompt();
 export async function POST(req: Request) {
   const { prompt, context } = await req.json();
 
-  const userPrompt = buildUserPrompt(prompt, context?.previousSpec);
+  const userPrompt = buildUserPrompt(prompt, context?.previousSpec, context?.layerSchemas);
 
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
