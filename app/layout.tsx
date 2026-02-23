@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -13,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://json-maps.dev"),
+  metadataBase: new URL("https://jsonmaps.dev"),
   title: {
     default: "json-maps | Declarative Maps from JSON",
     template: "%s | json-maps",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://json-maps.dev",
+    url: "https://jsonmaps.dev",
     siteName: "json-maps",
     title: "json-maps | Declarative Maps from JSON",
     description:

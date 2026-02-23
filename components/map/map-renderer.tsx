@@ -3,7 +3,6 @@
 import { Fragment, useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapRendererProps, MarkerSpec, ViewportBounds } from "@/lib/spec";
 import { resolveBasemapStyle } from "@/lib/spec";
 import { osrmProvider } from "@/lib/routing";

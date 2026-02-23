@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import LZString from "lz-string";
 import { MapSpecSchema } from "./schema.js";
 
-const BASE_URL = "https://json-maps.vercel.app";
+const BASE_URL = "https://jsonmaps.dev";
 
 function compressSpec(spec: unknown): string {
   const json = JSON.stringify(spec);
@@ -56,7 +56,7 @@ export function registerTools(server: McpServer) {
   // validate_map_spec — validate without creating URLs
   server.tool(
     "validate_map_spec",
-    "Validate a json-maps spec without creating a URL. Returns validation errors or confirms the spec is valid.",
+    "Validate a jsonmaps spec without creating a URL. Returns validation errors or confirms the spec is valid.",
     {
       spec: MapSpecSchema.describe("The MapSpec object to validate"),
     },

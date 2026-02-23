@@ -12,8 +12,9 @@ export default defineConfig({
   external: [
     "react",
     "react-dom",
+    "react/jsx-runtime",
     "maplibre-gl",
-    "zod",
+    "lucide-react",
   ],
   banner: {
     js: '"use client";',

@@ -7,17 +7,17 @@ import { SPEC_REFERENCE } from "./reference.js";
 
 export function createServer(): McpServer {
   const server = new McpServer({
-    name: "json-maps",
+    name: "jsonmaps",
     version: "0.1.0",
   });
 
   registerTools(server);
 
   // Register spec reference resource
-  server.resource("spec-reference", "json-maps://spec-reference", async () => ({
+  server.resource("spec-reference", "jsonmaps://spec-reference", async () => ({
     contents: [
       {
-        uri: "json-maps://spec-reference",
+        uri: "jsonmaps://spec-reference",
         mimeType: "text/markdown",
         text: SPEC_REFERENCE,
       },

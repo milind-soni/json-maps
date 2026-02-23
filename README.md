@@ -1,10 +1,10 @@
-# json-maps
+# jsonmaps
 
 Declarative map renderer — drop in a JSON spec, get a full interactive map.
 
 Built on [MapLibre GL](https://maplibre.org/) with [CARTO](https://carto.com/) basemaps. No API keys required.
 
-[Docs](https://json-maps.vercel.app/docs) · [Playground](https://json-maps.vercel.app/playground)
+[Docs](https://jsonmaps.vercel.app/docs) · [Playground](https://jsonmaps.vercel.app/playground)
 
 ## Install
 
@@ -226,7 +226,7 @@ function MyComponent() {
 
 ## AI Integration
 
-json-maps ships a catalog and system prompt for AI code generation:
+jsonmaps ships a catalog and system prompt for AI code generation:
 
 ```tsx
 import { mapCatalog } from "json-maps";

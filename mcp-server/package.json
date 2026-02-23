@@ -1,10 +1,10 @@
 {
-  "name": "json-maps-mcp",
+  "name": "jsonmaps-mcp",
   "version": "0.1.0",
-  "description": "MCP server for json-maps — create interactive maps via AI tool calls",
+  "description": "MCP server for jsonmaps — create interactive maps via AI tool calls",
   "type": "module",
   "bin": {
-    "json-maps-mcp": "./dist/index.js"
+    "jsonmaps-mcp": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "files": [
@@ -19,7 +19,7 @@
     "mcp",
     "model-context-protocol",
     "maps",
-    "json-maps",
+    "jsonmaps",
     "maplibre",
     "geojson",
     "ai"

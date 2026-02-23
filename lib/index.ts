@@ -17,6 +17,7 @@ export type {
   VectorTileLayerSpec,
   RasterTileLayerSpec,
   ParquetLayerSpec,
+  PMTilesLayerSpec,
   RouteProfile,
   RouteStyle,
   LayerSpec,
@@ -32,9 +33,12 @@ export type {
   LegendSpec,
   WidgetSpec,
   WidgetRowSpec,
+  SQLWidgetConfig,
+  ViewportBounds,
 } from "./spec";
 
 export { BASEMAP_STYLES, resolveBasemapStyle } from "./spec";
 export { PALETTES } from "./palettes";
+export { validateSpec, autoFixSpec, formatSpecIssues } from "./spec-schema";
 export { osrmProvider, mapboxProvider } from "./routing";
 export type { RoutingProvider, RoutingRequest } from "./routing";

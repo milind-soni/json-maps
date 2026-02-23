@@ -1,11 +1,11 @@
 /**
  * Compact spec reference for LLM context.
- * Adapted from json-maps lib/catalog.ts — kept in sync manually.
+ * Adapted from jsonmaps lib/catalog.ts — kept in sync manually.
  */
 
-export const SPEC_REFERENCE = `# json-maps Spec Reference
+export const SPEC_REFERENCE = `# jsonmaps Spec Reference
 
-json-maps renders interactive maps from a declarative JSON spec. Pass a MapSpec object to create_map to generate a viewable map URL.
+jsonmaps renders interactive maps from a declarative JSON spec. Pass a MapSpec object to create_map to generate a viewable map URL.
 
 ## MapSpec Fields
 

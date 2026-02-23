@@ -16,9 +16,9 @@
     }
   },
   "include": [
-    "lib/index.ts",
-    "lib/spec.ts",
-    "lib/palettes.ts",
-    "components/map-renderer.tsx"
+    "lib/**/*.ts",
+    "components/map/**/*.ts",
+    "components/map/**/*.tsx",
+    "hooks/**/*.ts"
   ]
 }
