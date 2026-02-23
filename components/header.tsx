@@ -66,8 +66,8 @@ export function Header() {
             className={cn(
               "text-sm transition-colors",
               isActive("/storytelling")
-                ? "text-primary font-medium"
-                : "text-muted-foreground hover:text-foreground",
+                ? "text-purple-500 font-medium"
+                : "text-muted-foreground hover:text-purple-500",
             )}
           >
             <span className="sm:hidden">Stories</span>
