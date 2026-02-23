@@ -57,13 +57,13 @@ Each marker has:
 - palette: color ramp name (default "OrYel")
 
 ### Vector Tiles (type: "mvt")
-- url: tile URL with {z}/{x}/{y}
+- url: tile URL with {z}/{x}/{y} template (NOT for .pmtiles files — use type "pmtiles" instead)
 - sourceLayer: layer name in tiles (required)
 - style: same as GeoJSON
 - filter: MapLibre filter expression
 
 ### Raster Tiles (type: "raster")
-- url: tile URL with {z}/{x}/{y}
+- url: tile URL with {z}/{x}/{y} template (NOT for .pmtiles files — use type "pmtiles" instead)
 - tileSize: pixels (default 256)
 - opacity: 0-1
 
@@ -71,10 +71,19 @@ Each marker has:
 - data: URL to .parquet file
 - style, tooltip, cluster: same as GeoJSON
 
+### PMTiles (type: "pmtiles") — PREFERRED for any .pmtiles URL
+- IMPORTANT: If a URL ends in .pmtiles, ALWAYS use type "pmtiles", never "mvt" or "raster"
+- url: URL to a .pmtiles file (static hosting, no tile server needed)
+- sourceLayer: layer name in vector tiles (required for vector PMTiles, omit for raster)
+- style: same as GeoJSON (for vector PMTiles)
+- opacity: 0-1 (for raster PMTiles)
+- filter: MapLibre filter expression
+- attribution: attribution text
+
 ## Data-Driven Styling
 
 Continuous color: { "type": "continuous", "attr": "population", "palette": "Sunset", "domain": [0, 1000000] }
-Categorical color: { "type": "categorical", "attr": "type", "palette": "Bold", "categories": ["residential", "commercial"] }
+Categorical color: { "type": "categorical", "attr": "type", "palette": "Bold", "categories": ["residential", "commercial"] } — categories array is REQUIRED for colors to vary
 Continuous size: { "type": "continuous", "attr": "mag", "domain": [0, 8], "range": [2, 12] }
 
 ## Palettes

@@ -153,7 +153,7 @@ const VectorTileLayerSchema = z.object({
   maxzoom: z.number().optional(),
   tooltip: z.union([z.string(), z.array(z.string())]).optional(),
   filter: z.array(z.unknown()).optional().describe('MapLibre filter (e.g. ["==", "type", "park"])'),
-}).describe("Vector tile layer (MVT) — styled features from tile server");
+}).describe("Vector tile layer (MVT) — styled features from tile server. Do NOT use for .pmtiles URLs — use type 'pmtiles' instead");
 
 const RasterTileLayerSchema = z.object({
   type: z.literal("raster"),
@@ -175,6 +175,20 @@ const ParquetLayerSchema = z.object({
   clusterOptions: ClusterOptionsSchema.optional(),
 }).describe("GeoParquet layer — load and render parquet spatial data");
 
+const PMTilesLayerSchema = z.object({
+  type: z.literal("pmtiles"),
+  url: z.string().describe("URL to a .pmtiles file (e.g. https://example.com/data.pmtiles)"),
+  sourceLayer: z.string().optional().describe("Source layer name within vector PMTiles (required for vector tiles)"),
+  style: LayerStyleSchema.optional(),
+  minzoom: z.number().optional(),
+  maxzoom: z.number().optional(),
+  tooltip: z.union([z.string(), z.array(z.string())]).optional(),
+  filter: z.array(z.unknown()).optional().describe('MapLibre filter expression'),
+  tileSize: z.number().optional().describe("Tile size in pixels for raster PMTiles (default 256)"),
+  opacity: z.number().min(0).max(1).optional().describe("Opacity for raster PMTiles (default 0.8)"),
+  attribution: z.string().optional().describe("Attribution text"),
+}).describe("PMTiles layer — ALWAYS use this type for any .pmtiles URL. Cloud-optimized single-file tile archive (vector or raster), no tile server needed");
+
 const LayerSchema = z.union([
   GeoJsonLayerSchema,
   RouteLayerSchema,
@@ -182,6 +196,7 @@ const LayerSchema = z.union([
   VectorTileLayerSchema,
   RasterTileLayerSchema,
   ParquetLayerSchema,
+  PMTilesLayerSchema,
 ]);
 
 /* ---- Controls ---- */
@@ -246,7 +261,7 @@ export const MapSpecSchema = z.object({
   markers: z.record(z.string(), MarkerSchema).optional()
     .describe("Named map of markers — keys are descriptive IDs like 'eiffel-tower'"),
   layers: z.record(z.string(), LayerSchema).optional()
-    .describe("Named map of data layers (geojson, route, heatmap, mvt, raster, parquet)"),
+    .describe("Named map of data layers (geojson, route, heatmap, mvt, raster, parquet, pmtiles)"),
   controls: ControlsSchema.optional(),
   legend: z.record(z.string(), LegendSchema).optional()
     .describe("Named map of legend overlays"),

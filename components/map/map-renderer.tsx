@@ -20,6 +20,7 @@ import {
   addVectorTileLayer,
   addRasterTileLayer,
   addParquetLayer,
+  addPMTilesLayer,
   removeLayer,
   type LayerDeps,
   type LayerTooltipData,
@@ -273,6 +274,8 @@ export function MapRenderer({
         addRasterTileLayer(map, id, layerSpec);
       } else if (layerSpec.type === "parquet") {
         addParquetLayer(map, id, layerSpec, layerDeps);
+      } else if (layerSpec.type === "pmtiles") {
+        addPMTilesLayer(map, id, layerSpec, layerDeps);
       } else {
         addGeoJsonLayer(map, id, layerSpec, layerDeps);
       }

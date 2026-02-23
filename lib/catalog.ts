@@ -58,7 +58,7 @@ const LAYER_STYLE_FIELDS: Record<string, FieldDef> = {
 };
 
 const LAYER_FIELDS: Record<string, FieldDef> = {
-  type: { description: '"geojson", "route", "heatmap", "mvt" (vector tiles), "raster" (tile imagery), or "parquet" (GeoParquet files) (required)' },
+  type: { description: '"geojson", "route", "heatmap", "mvt" (vector tiles), "raster" (tile imagery), "parquet" (GeoParquet files), or "pmtiles" (PMTiles archives) (required)' },
   data: {
     description:
       '(geojson) URL string to a GeoJSON file OR inline GeoJSON object. (parquet) URL to a GeoParquet file.',
@@ -122,27 +122,27 @@ const LAYER_FIELDS: Record<string, FieldDef> = {
   },
   url: {
     description:
-      '(mvt/raster) tile URL template with {z}/{x}/{y} placeholders (e.g. "https://example.com/tiles/{z}/{x}/{y}.pbf") OR a TileJSON URL',
+      '(mvt/raster) tile URL template with {z}/{x}/{y} placeholders. (pmtiles) URL to a .pmtiles file. IMPORTANT: if the URL ends in .pmtiles, ALWAYS use type "pmtiles", never "mvt" or "raster".',
   },
   sourceLayer: {
     description:
-      '(mvt only, required) name of the source layer within vector tiles (e.g. "buildings", "roads", "water")',
+      '(mvt, required) name of the source layer within vector tiles. (pmtiles) required for vector PMTiles, omit for raster PMTiles.',
   },
   filter: {
     description:
-      '(mvt only) MapLibre filter expression to filter features (e.g. ["==", "type", "park"])',
+      '(mvt/pmtiles) MapLibre filter expression to filter features (e.g. ["==", "type", "park"])',
   },
   tileSize: {
-    description: "(raster only) tile size in pixels (default 256)",
+    description: "(raster/pmtiles) tile size in pixels (default 256)",
   },
   attribution: {
-    description: "(raster only) attribution text shown on the map",
+    description: "(raster/pmtiles) attribution text shown on the map",
   },
   minzoom: {
-    description: "(mvt/raster) minimum zoom level to show this layer (0-24)",
+    description: "(mvt/raster/pmtiles) minimum zoom level to show this layer (0-24)",
   },
   maxzoom: {
-    description: "(mvt/raster) maximum zoom level to show this layer (0-24)",
+    description: "(mvt/raster/pmtiles) maximum zoom level to show this layer (0-24)",
   },
 };
 
@@ -295,7 +295,7 @@ const BASE_RULES = [
   "Use varied colors for different markers to make them distinguishable.",
   'When markers represent specific categories (restaurants, hotels, parks, etc.), use the icon field with a supported icon name (kebab-case). For generic location pins, omit icon to use the default dot.',
   'For layers, use "/layers/<id>" to add GeoJSON layers. Use well-known public GeoJSON URLs when possible.',
-  "When adding layers with data-driven color, always include the domain range for continuous palettes.",
+  "When adding layers with data-driven color, always include the domain range for continuous palettes. For categorical color, ALWAYS include the categories array with the expected values — without it the colors will not vary.",
   "Include tooltip arrays for layers so users can inspect features on hover.",
   'When adding controls, use "/controls" path. Default shows zoom + compass at top-right. Only add controls when user requests interactive UI elements.',
   'For routes, use type "route" with EITHER a coordinates array of [lng, lat] pairs for manual paths, OR from/to fields for OSRM auto-routing that follows real roads. Use profile "driving", "walking", or "cycling" (default "driving"). Add waypoints array for intermediate stops. Optional style (color, width, opacity, dashed).',
@@ -303,6 +303,7 @@ const BASE_RULES = [
   'For heatmaps, use type "heatmap" with a GeoJSON data source of Point features. Set weight to a numeric property for weighted density (e.g. "mag" for earthquake magnitude). Adjust radius (default 30) and intensity (default 1) for visual density. Use a sequential palette like OrYel, Sunset, or Burg.',
   'For vector tiles (MVT), use type "mvt" with a tile URL template containing {z}/{x}/{y} or a TileJSON URL. Always specify sourceLayer (the layer name inside the tiles). For Fused (fused.io) or udf.ai tile URLs, always use sourceLayer "udf". Style with the same LayerStyle system as GeoJSON (fillColor, lineColor, pointColor). Support data-driven color and tooltips from tile feature properties.',
   'For raster tiles (satellite imagery, terrain, etc.), use type "raster" with a tile URL template containing {z}/{x}/{y}. Set tileSize (default 256) and opacity. These are image tiles — no feature properties or tooltips.',
+  'IMPORTANT: For PMTiles (.pmtiles files), ALWAYS use type "pmtiles". Never use "mvt" or "raster" for .pmtiles URLs. PMTiles is a cloud-optimized single-file tile archive — set url to the .pmtiles URL. For vector PMTiles, set sourceLayer to the layer name inside the archive. For raster PMTiles, omit sourceLayer. Style, tooltip, and filter work the same as MVT layers. When PMTiles metadata is provided in the prompt (source layer names, field names, bounds, center), USE it — set sourceLayer to the actual layer name, tooltip to actual field names, and center/zoom to match the data bounds.',
   'IMPORTANT: When the user provides a URL containing "parquet" (either ending in .parquet OR with dtype_out_vector=parquet as a query parameter), ALWAYS use type "parquet". Keep the URL exactly as given — do not modify the URL, path, or query parameters. For Fused/udf.ai URLs with dtype_out_vector=parquet, use the full URL as-is. Do NOT set center or zoom for parquet layers — the map auto-fits to the data bounds after loading. The geometry column is auto-detected from GeoParquet metadata. Style, tooltip, and clustering work the same as GeoJSON layers.',
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
   'For widgets (stat cards / info overlays), use "/widgets/<id>". Include title (small label), value (big number), description (subtitle), and/or rows (key-value pairs). Use position to place them. Only add widgets when the user asks for dashboard-style overlays or stats on the map.',
@@ -370,6 +371,12 @@ const EXAMPLES: Array<{ prompt: string; output: string }> = [
 {"op":"replace","path":"/zoom","value":13}
 {"op":"add","path":"/layers/overture-buildings","value":{"type":"mvt","url":"https://unstable.udf.ai/fsh_2hMoO790LkKZoVGGytJRfG/run/tiles/{z}/{x}/{y}?dtype_out_vector=mvt","sourceLayer":"udf","style":{"fillColor":"#3b82f6","lineColor":"#1e3a5f","opacity":0.6},"tooltip":["name","class","subtype"]}}
 {"op":"replace","path":"/controls","value":{"zoom":true,"layerSwitcher":true}}`,
+  },
+  {
+    prompt: "Show this https://data.source.coop/fiboa/us-usda-cropland/us_usda_cropland.pmtiles",
+    output: `{"op":"replace","path":"/center","value":[-98,39]}
+{"op":"replace","path":"/zoom","value":5}
+{"op":"add","path":"/layers/cropland","value":{"type":"pmtiles","url":"https://data.source.coop/fiboa/us-usda-cropland/us_usda_cropland.pmtiles","sourceLayer":"us_usda_cropland","style":{"fillColor":{"type":"categorical","attr":"crop:name","palette":"Bold","categories":["Corn","Soybeans","Winter Wheat","Cotton","Alfalfa","Spring Wheat","Sorghum","Rice","Peanuts","Sunflower"]},"opacity":0.7},"tooltip":["crop:name","administrative_area_level_2"]}}`,
   },
 ];
 

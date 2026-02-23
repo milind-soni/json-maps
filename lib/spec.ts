@@ -163,7 +163,31 @@ export interface ParquetLayerSpec {
   clusterOptions?: ClusterOptions;
 }
 
-export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec | VectorTileLayerSpec | RasterTileLayerSpec | ParquetLayerSpec;
+export interface PMTilesLayerSpec {
+  type: "pmtiles";
+  /** URL to a .pmtiles file */
+  url: string;
+  /** Source layer name within vector PMTiles (required for vector tiles) */
+  sourceLayer?: string;
+  /** Style for vector PMTiles (same as GeoJSON/MVT layers) */
+  style?: LayerStyle;
+  /** Min zoom level */
+  minzoom?: number;
+  /** Max zoom level */
+  maxzoom?: number;
+  /** Tooltip — string for literal text, or array of property names */
+  tooltip?: string | string[];
+  /** MapLibre filter expression */
+  filter?: unknown[];
+  /** Tile size in pixels for raster PMTiles (default 256) */
+  tileSize?: number;
+  /** Opacity 0-1 for raster PMTiles (default 0.8) */
+  opacity?: number;
+  /** Attribution text shown on the map */
+  attribution?: string;
+}
+
+export type LayerSpec = GeoJsonLayerSpec | RouteLayerSpec | HeatmapLayerSpec | VectorTileLayerSpec | RasterTileLayerSpec | ParquetLayerSpec | PMTilesLayerSpec;
 
 /* ---- Controls ---- */
 

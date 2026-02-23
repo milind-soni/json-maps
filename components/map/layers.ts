@@ -1,4 +1,5 @@
 import maplibregl from "maplibre-gl";
+import { Protocol as PMTilesProtocol } from "pmtiles";
 import { PALETTES } from "@/lib/palettes";
 import type {
   GeoJsonLayerSpec,
@@ -7,6 +8,7 @@ import type {
   VectorTileLayerSpec,
   RasterTileLayerSpec,
   ParquetLayerSpec,
+  PMTilesLayerSpec,
 } from "@/lib/spec";
 import { loadGeoParquet } from "@/lib/parquet-loader";
 import type { RoutingProvider } from "@/lib/routing";
@@ -677,6 +679,179 @@ export function addParquetLayer(
       deps.pendingRouteFetchRef.current.delete(id);
       console.warn(`[json-maps] Failed to load parquet "${id}":`, err);
     });
+}
+
+/* ------------------------------------------------------------------ */
+/*  PMTiles layer                                                      */
+/* ------------------------------------------------------------------ */
+
+let pmtilesRegistered = false;
+function ensurePMTilesProtocol() {
+  if (pmtilesRegistered) return;
+  const protocol = new PMTilesProtocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+  pmtilesRegistered = true;
+}
+
+export function addPMTilesLayer(
+  map: maplibregl.Map,
+  id: string,
+  layer: PMTilesLayerSpec,
+  deps: LayerDeps,
+) {
+  const sourceId = `jm-${id}`;
+
+  try {
+    ensurePMTilesProtocol();
+
+    // Ensure URL has pmtiles:// prefix
+    const pmtilesUrl = layer.url.startsWith("pmtiles://")
+      ? layer.url
+      : `pmtiles://${layer.url}`;
+
+    if (layer.sourceLayer) {
+      // Vector PMTiles — same rendering as MVT
+      const style = layer.style ?? {};
+      const opacity = style.opacity ?? 0.8;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sourceOpts: any = { type: "vector", url: pmtilesUrl };
+      if (layer.minzoom != null) sourceOpts.minzoom = layer.minzoom;
+      if (layer.maxzoom != null) sourceOpts.maxzoom = layer.maxzoom;
+      if (layer.attribution) sourceOpts.attribution = layer.attribution;
+
+      map.addSource(sourceId, sourceOpts);
+
+      const baseOpts = {
+        source: sourceId,
+        "source-layer": layer.sourceLayer,
+        ...(layer.minzoom != null ? { minzoom: layer.minzoom } : {}),
+        ...(layer.maxzoom != null ? { maxzoom: layer.maxzoom } : {}),
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const withGeomFilter = (geomFilter: any[]) => {
+        if (layer.filter) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return ["all", layer.filter as any, geomFilter];
+        }
+        return geomFilter;
+      };
+
+      const fillColor = colorValueToExpression(style.fillColor ?? "#3b82f6");
+      map.addLayer({
+        id: `${sourceId}-fill`,
+        type: "fill",
+        ...baseOpts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        filter: withGeomFilter(["any", ["==", ["geometry-type"], "Polygon"], ["==", ["geometry-type"], "MultiPolygon"]]) as any,
+        paint: { "fill-color": fillColor, "fill-opacity": opacity },
+      });
+
+      const lineColor = colorValueToExpression(style.lineColor ?? "#333333");
+      map.addLayer({
+        id: `${sourceId}-line`,
+        type: "line",
+        ...baseOpts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(layer.filter ? { filter: layer.filter as any } : {}),
+        paint: {
+          "line-color": lineColor,
+          "line-width": style.lineWidth ?? 1,
+          "line-opacity": Math.min(opacity + 0.1, 1),
+        },
+      });
+
+      const pointColor = colorValueToExpression(style.pointColor ?? style.fillColor ?? "#3b82f6");
+      map.addLayer({
+        id: `${sourceId}-circle`,
+        type: "circle",
+        ...baseOpts,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        filter: withGeomFilter(["any", ["==", ["geometry-type"], "Point"], ["==", ["geometry-type"], "MultiPoint"]]) as any,
+        paint: {
+          "circle-color": pointColor,
+          "circle-radius": sizeValueToExpression(style.pointRadius ?? 5, 5),
+          "circle-opacity": opacity,
+          "circle-stroke-width": style.lineWidth ?? 1,
+          "circle-stroke-color": lineColor,
+        },
+      });
+
+      // Tooltip
+      if (layer.tooltip && layer.tooltip.length > 0) {
+        const isText = typeof layer.tooltip === "string";
+        const columns: string[] = isText ? ["_text"] : layer.tooltip as string[];
+        const subLayers = [`${sourceId}-fill`, `${sourceId}-circle`, `${sourceId}-line`];
+        const handlers: LayerHandler[] = [];
+
+        for (const subLayer of subLayers) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const onMove = (e: any) => {
+            if (!e.features || e.features.length === 0) return;
+            map.getCanvas().style.cursor = "pointer";
+            if (isText) {
+              deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
+            } else {
+              const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
+              deps.setLayerTooltip({ properties: props, columns });
+            }
+            const popup = deps.layerTooltipPopupRef.current;
+            if (popup) popup.setLngLat(e.lngLat).addTo(map);
+          };
+          const onLeave = () => {
+            map.getCanvas().style.cursor = "";
+            deps.setLayerTooltip(null);
+            deps.layerTooltipPopupRef.current?.remove();
+          };
+          map.on("mousemove", subLayer, onMove);
+          map.on("mouseleave", subLayer, onLeave);
+          handlers.push({ event: "mousemove", layer: subLayer, handler: onMove });
+          handlers.push({ event: "mouseleave", layer: subLayer, handler: onLeave });
+        }
+        deps.layerHandlersRef.current[sourceId] = handlers;
+      }
+
+      // Click event
+      {
+        const clickLayers = [`${sourceId}-fill`, `${sourceId}-circle`, `${sourceId}-line`];
+        const clickHandlers: LayerHandler[] = [];
+        for (const subLayer of clickLayers) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const onClick = (e: any) => {
+            deps.callbacksRef.current.onLayerClick?.(id, [e.lngLat.lng, e.lngLat.lat]);
+          };
+          map.on("click", subLayer, onClick);
+          clickHandlers.push({ event: "click", layer: subLayer, handler: onClick });
+        }
+        const existing = deps.layerHandlersRef.current[sourceId] ?? [];
+        deps.layerHandlersRef.current[sourceId] = [...existing, ...clickHandlers];
+      }
+    } else {
+      // Raster PMTiles
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sourceOpts: any = {
+        type: "raster",
+        url: pmtilesUrl,
+        tileSize: layer.tileSize ?? 256,
+      };
+      if (layer.minzoom != null) sourceOpts.minzoom = layer.minzoom;
+      if (layer.maxzoom != null) sourceOpts.maxzoom = layer.maxzoom;
+      if (layer.attribution) sourceOpts.attribution = layer.attribution;
+
+      map.addSource(sourceId, sourceOpts);
+
+      map.addLayer({
+        id: `${sourceId}-raster`,
+        type: "raster",
+        source: sourceId,
+        paint: { "raster-opacity": layer.opacity ?? 0.8 },
+      });
+    }
+  } catch (err) {
+    console.warn(`[json-maps] Failed to add PMTiles layer "${id}":`, err);
+    try { removeLayer(map, id, deps); } catch { /* ignore */ }
+  }
 }
 
 /* ------------------------------------------------------------------ */

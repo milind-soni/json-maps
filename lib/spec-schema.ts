@@ -153,7 +153,21 @@ const ParquetLayerSchema = z.object({
   clusterOptions: ClusterOptionsSchema.optional(),
 });
 
-const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema, VectorTileLayerSchema, RasterTileLayerSchema, ParquetLayerSchema]);
+const PMTilesLayerSchema = z.object({
+  type: z.literal("pmtiles"),
+  url: z.string().min(1),
+  sourceLayer: z.string().min(1).optional(),
+  style: LayerStyleSchema.optional(),
+  minzoom: z.number().min(0).max(24).optional(),
+  maxzoom: z.number().min(0).max(24).optional(),
+  tooltip: z.union([z.string(), z.array(z.string())]).optional(),
+  filter: z.array(z.unknown()).optional(),
+  tileSize: z.number().min(1).optional(),
+  opacity: z.number().min(0).max(1).optional(),
+  attribution: z.string().optional(),
+});
+
+const LayerSchema = z.union([GeoJsonLayerSchema, RouteLayerSchema, HeatmapLayerSchema, VectorTileLayerSchema, RasterTileLayerSchema, ParquetLayerSchema, PMTilesLayerSchema]);
 
 /* ---- Legend ---- */
 
