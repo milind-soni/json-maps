@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
         ? await chromium.executablePath()
         : (process.env.CHROME_PATH ??
             "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
-      headless: isVercel ? chromium.headless : true,
+      headless: true,
     });
 
     const page = await browser.newPage();
