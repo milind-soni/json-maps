@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     const screenshot = await page.screenshot({ type: "png", fullPage: false });
 
-    return new NextResponse(screenshot, {
+    return new NextResponse(Buffer.from(screenshot), {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600",
