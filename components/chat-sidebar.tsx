@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, type RefObject } from "react";
+import { Streamdown } from "streamdown";
+import { code } from "@streamdown/code";
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -125,8 +127,10 @@ export function ChatSidebar({
               ) : (
                 <div className="space-y-2">
                   {msg.content && (
-                    <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                      {msg.content}
+                    <div className="text-sm text-foreground/90 leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                      <Streamdown plugins={{ code }}>
+                        {msg.content}
+                      </Streamdown>
                     </div>
                   )}
                   {msg.patchCount != null && msg.patchCount > 0 && (
@@ -144,8 +148,10 @@ export function ChatSidebar({
           {isStreaming && (
             <div className="space-y-2">
               {streamingText ? (
-                <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                  {streamingText}
+                <div className="text-sm text-foreground/90 leading-relaxed prose prose-sm dark:prose-invert max-w-none">
+                  <Streamdown plugins={{ code }} animated>
+                    {streamingText}
+                  </Streamdown>
                 </div>
               ) : (
                 <div className="text-sm text-muted-foreground animate-shimmer">

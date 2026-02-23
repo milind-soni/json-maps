@@ -11,6 +11,8 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Streamdown } from "streamdown";
+import { code } from "@streamdown/code";
 
 const STORAGE_KEY = "docs-chat-messages";
 const transport = new DefaultChatTransport({ api: "/api/docs-chat" });
@@ -375,12 +377,28 @@ export function GlobalChat({
                   <div className="space-y-2">
                     {message.parts.map((part, i) => {
                       if (part.type === "text" && part.text) {
+                        const isLast =
+                          i ===
+                          message.parts.filter(
+                            (p) => p.type === "text" && "text" in p && p.text,
+                          ).length -
+                            1;
                         return (
                           <div
                             key={i}
-                            className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap"
+                            className="docs-chat-content text-sm text-foreground/90 leading-relaxed prose prose-sm dark:prose-invert max-w-none"
                           >
-                            {part.text}
+                            <Streamdown
+                              plugins={{ code }}
+                              animated={
+                                isLast &&
+                                isLoading &&
+                                message.id ===
+                                  messages[messages.length - 1]?.id
+                              }
+                            >
+                              {part.text}
+                            </Streamdown>
                           </div>
                         );
                       }
