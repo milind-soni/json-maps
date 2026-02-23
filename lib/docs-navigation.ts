@@ -55,6 +55,12 @@ export const docsNavigation: NavSection[] = [
     ],
   },
   {
+    title: "Data",
+    items: [
+      { title: "Data Registry", href: "/docs/data-registry" },
+    ],
+  },
+  {
     title: "Guides",
     items: [
       { title: "Recipes", href: "/docs/recipes" },

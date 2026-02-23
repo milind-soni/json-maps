@@ -1,0 +1,149 @@
+import { LiveExample } from "@/components/live-example"
+import { pageMetadata } from "@/lib/page-metadata"
+export const metadata = pageMetadata("docs/data-registry")
+
+# Data Registry
+
+A curated catalog of free, open data sources — boundaries, live feeds, static datasets, and basemaps. The AI knows about all of these, and you can use them directly in specs.
+
+## Boundaries
+
+| Name | Description | Properties | Size |
+|---|---|---|---|
+| **India States** | State and union territory boundaries — 35 features | `NAME_1`, `TYPE_1`, `ENGTYPE_1` | 2 MB |
+| **India Districts** | District boundaries — 820 features (post-2020) | `district`, `state`, `statecode` | 15 MB |
+
+## Live Data
+
+| Name | Description | Refresh |
+|---|---|---|
+| **USGS Earthquakes (Past Hour)** | All earthquakes in the past hour | 60s |
+| **USGS Earthquakes (Past Day)** | All earthquakes in the past 24 hours | 5 min |
+| **USGS Earthquakes (Past 7 Days)** | All earthquakes in the past week — ~2,000 features | 5 min |
+| **USGS Earthquakes (Past 30 Days)** | All earthquakes in the past month — ~10,000 features | 15 min |
+| **USGS Significant Earthquakes (Past 7 Days)** | Only M4.5+ earthquakes | 5 min |
+
+All USGS feeds include: `mag`, `place`, `time`, `type`, `tsunami`, `sig`, `magType`, `title`.
+
+## Datasets
+
+| Name | Description | Geometry | Properties |
+|---|---|---|---|
+| **World Airports** | ~700 major airports worldwide | Point | `name`, `abbrev`, `iata_code`, `type` |
+| **World Ports** | Major ports worldwide | Point | `name`, `scalerank` |
+| **World Urban Areas** | Urban area polygons | Polygon | `scalerank`, `area_sqkm` |
+| **World Populated Places** | ~7,000 cities and towns | Point | `name`, `pop_max`, `adm0name` |
+| **World Rivers** | Major rivers worldwide | Line | `name`, `scalerank` |
+| **World Lakes** | Major lakes worldwide | Polygon | `name`, `scalerank` |
+
+All datasets sourced from [Natural Earth](https://www.naturalearthdata.com/) (public domain).
+
+## Tiles
+
+| Name | Description | Format |
+|---|---|---|
+| **Overture Buildings** | Building footprints worldwide via Fused | MVT (`sourceLayer: "udf"`) |
+
+## Basemaps
+
+| Name | Description |
+|---|---|
+| **CartoDB Positron** | Clean light basemap |
+| **CartoDB Dark Matter** | Dark basemap |
+| **CartoDB Voyager** | Street-level detail basemap |
+
+## Usage
+
+### With the AI
+
+Just describe what you want — the AI knows all registry datasets:
+
+> "Show earthquakes worldwide" → uses USGS earthquake feed
+>
+> "Show India states" → uses India state boundaries
+
+### With `registry:` prefix
+
+Reference any dataset by ID:
+
+```json
+{
+  "layers": {
+    "quakes": {
+      "type": "geojson",
+      "data": "registry:usgs-earthquakes-week",
+      "style": { "pointColor": "#ef4444", "pointRadius": 4 },
+      "tooltip": ["place", "mag"]
+    }
+  }
+}
+```
+
+### With direct URLs
+
+Copy the URL from the registry and use it directly:
+
+```json
+{
+  "layers": {
+    "airports": {
+      "type": "geojson",
+      "data": "https://d2ad6b4ur7yvpq.cloudfront.net/naturalearth-3.3.0/ne_10m_airports.geojson",
+      "tooltip": ["name", "iata_code"]
+    }
+  }
+}
+```
+
+## Example
+
+India state boundaries from the registry:
+
+<LiveExample spec={{
+  basemap: "light",
+  center: [78.96, 20.59],
+  zoom: 4,
+  layers: {
+    "india-states": {
+      type: "geojson",
+      data: "https://raw.githubusercontent.com/geohacker/india/master/state/india_state.geojson",
+      style: {
+        fillColor: "#3b82f6",
+        lineColor: "#1e40af",
+        opacity: 0.6,
+      },
+      tooltip: ["NAME_1", "TYPE_1"],
+    },
+  },
+}} />
+
+## Contributing
+
+The registry is a single JSON file — adding a new dataset is just a PR.
+
+1. Fork [json-maps on GitHub](https://github.com/milind-soni/json-maps)
+2. Edit `lib/data-registry.json`
+3. Add your entry following this schema:
+
+```json
+{
+  "id": "my-dataset",
+  "name": "My Dataset",
+  "description": "Short description of what this contains",
+  "url": "https://example.com/data.geojson",
+  "format": "geojson",
+  "category": "datasets",
+  "tags": ["keyword1", "keyword2"],
+  "license": "public-domain",
+  "source": "Organization or author name",
+  "properties": ["name", "population"],
+  "geometry": "point"
+}
+```
+
+4. Submit a pull request
+
+**Requirements:**
+- Data must be freely available with a stable URL
+- License must allow redistribution (public domain, CC-BY, ODbL, etc.)
+- URL must serve GeoJSON, MVT tiles, or raster tiles directly — no auth required

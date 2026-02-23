@@ -42,6 +42,9 @@ export const PAGE_TITLES: Record<string, string> = {
   "docs/component-slots": "Component Slots",
   "docs/routing-providers": "Routing Providers",
 
+  // Docs — Data
+  "docs/data-registry": "Data Registry",
+
   // Docs — Guides
   "docs/recipes": "Recipes",
 };
