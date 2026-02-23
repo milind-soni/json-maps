@@ -11,7 +11,7 @@ const registeredTables = new Set<string>();
 async function initDuckDB(): Promise<AsyncDuckDB> {
   // Load from esm.sh to avoid Turbopack bundling issues — esm.sh auto-bundles apache-arrow
   // @ts-ignore — runtime CDN import, not resolvable by TypeScript
-  const duckdb = await import(/* webpackIgnore: true */ "https://esm.sh/@duckdb/duckdb-wasm@1.32.0");
+  const duckdb = await import(/* webpackIgnore: true */ "https://esm.sh/@duckdb/duckdb-wasm@1.33.1-dev18.0");
   const bundles = duckdb.getJsDelivrBundles();
   const bundle = await duckdb.selectBundle(bundles);
 
