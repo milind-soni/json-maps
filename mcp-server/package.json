@@ -1,0 +1,41 @@
+{
+  "name": "json-maps-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for json-maps — create interactive maps via AI tool calls",
+  "type": "module",
+  "bin": {
+    "json-maps-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "maps",
+    "json-maps",
+    "maplibre",
+    "geojson",
+    "ai"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.0",
+    "lz-string": "^1.5.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/lz-string": "^1.3.34",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
