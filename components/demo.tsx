@@ -231,6 +231,27 @@ export function Demo() {
     }
   }, [mode, apiSpec]);
 
+  // Listen for spec updates from global chat sidebar
+  useEffect(() => {
+    const handleChatSpec = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        spec: MapSpec;
+        rawLines: string[];
+        isStreaming: boolean;
+      };
+      // Switch to interactive mode if still in simulation
+      if (mode === "simulation") {
+        setMode("interactive");
+        setPhase("complete");
+        setTypedPrompt(SIMULATION_PROMPT);
+      }
+      setCurrentSpec(detail.spec);
+      setStreamLines(detail.rawLines);
+    };
+    window.addEventListener("globalchat:spec", handleChatSpec);
+    return () => window.removeEventListener("globalchat:spec", handleChatSpec);
+  }, [mode]);
+
   // Fullscreen body scroll lock
   useEffect(() => {
     if (isFullscreen) {

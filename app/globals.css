@@ -120,6 +120,21 @@ button {
   cursor: pointer;
 }
 
+/* Shimmer animation for loading states (matches json-render) */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, currentColor 25%, hsl(0 0% 64%) 50%, currentColor 75%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
 /* Override MapLibre default popup styles */
 .maplibregl-popup-content {
   background: transparent !important;

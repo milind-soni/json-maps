@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   compressToEncodedURIComponent,
   decompressFromEncodedURIComponent,
@@ -9,9 +15,17 @@ import { MapRenderer } from "./map";
 import { CodeBlock } from "./code-block";
 import { CopyButton } from "./copy-button";
 import { ExportModal } from "./export-modal";
+import { ChatSidebar, type ChatMessage } from "./chat-sidebar";
 import { type MapSpec } from "@/lib/spec";
 import { validateSpec } from "@/lib/spec-schema";
 import { generateStaticCode } from "@/lib/generate-code";
+import { useMapStream } from "@/lib/use-map-stream";
+import { layerDataCache } from "@/lib/layer-data-cache";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+
+const DESKTOP_DEFAULT_WIDTH = 400;
+const DESKTOP_MIN_WIDTH = 300;
+const DESKTOP_MAX_WIDTH = 700;
 
 const DEFAULT_SPEC: MapSpec = {
   basemap: "dark",
@@ -54,6 +68,180 @@ export function Playground() {
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+  const [desktopWidth, setDesktopWidth] = useState(DESKTOP_DEFAULT_WIDTH);
+  const isDraggingRef = useRef(false);
+
+  // Track whether spec update came from stream (to avoid editor→stream loops)
+  const fromStreamRef = useRef(false);
+
+  // Keep a ref to current spec so send callback doesn't go stale
+  const specRef = useRef(spec);
+  specRef.current = spec;
+
+  // Destructure to get stable references (same pattern as working demo.tsx)
+  const {
+    spec: streamSpec,
+    isStreaming: streamIsStreaming,
+    error: streamError,
+    rawLines,
+    streamText,
+    send,
+    stop,
+  } = useMapStream({ api: "/api/generate" });
+  const wasStreamingRef = useRef(false);
+
+  // Detect desktop vs mobile
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    setIsDesktop(mq.matches);
+    setHasMounted(true);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Push page content on desktop when pane is open
+  useEffect(() => {
+    const body = document.body;
+    if (isDesktop && chatOpen) {
+      body.style.paddingRight = `${desktopWidth}px`;
+      if (!isDraggingRef.current) {
+        body.style.transition = "padding-right 150ms ease";
+      }
+    } else if (isDesktop) {
+      body.style.paddingRight = "0px";
+      body.style.transition = "padding-right 150ms ease";
+    }
+    return () => {
+      body.style.paddingRight = "0px";
+      body.style.transition = "";
+    };
+  }, [isDesktop, chatOpen, desktopWidth]);
+
+  // Resize handle drag
+  const handleResizePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      isDraggingRef.current = true;
+      document.documentElement.style.transition = "none";
+      const startX = e.clientX;
+      const startWidth = desktopWidth;
+
+      const onPointerMove = (ev: globalThis.PointerEvent) => {
+        const delta = startX - ev.clientX;
+        const newWidth = Math.min(
+          DESKTOP_MAX_WIDTH,
+          Math.max(DESKTOP_MIN_WIDTH, startWidth + delta),
+        );
+        setDesktopWidth(newWidth);
+      };
+
+      const onPointerUp = () => {
+        isDraggingRef.current = false;
+        document.documentElement.style.transition = "";
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+      };
+
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+    },
+    [desktopWidth],
+  );
+
+  // Cmd+K to toggle chat
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setChatOpen((prev) => {
+          if (!prev) {
+            setTimeout(() => chatInputRef.current?.focus(), 200);
+          }
+          return !prev;
+        });
+      }
+      if (e.key === "Escape" && chatOpen && isDesktop) {
+        setChatOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [chatOpen, isDesktop]);
+
+  // Auto-focus input when opened
+  useEffect(() => {
+    if (chatOpen) {
+      const timer = setTimeout(() => chatInputRef.current?.focus(), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [chatOpen]);
+
+  // When streaming ends, add assistant message (or error)
+  useEffect(() => {
+    if (wasStreamingRef.current && !streamIsStreaming) {
+      if (streamError) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: `Error: ${streamError.message}` },
+        ]);
+      } else {
+        const patchCount = rawLines.length;
+        if (patchCount > 0 || streamText) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: streamText || "Done.",
+              patchCount,
+            },
+          ]);
+        }
+      }
+    }
+    wasStreamingRef.current = streamIsStreaming;
+  }, [streamIsStreaming, streamText, rawLines.length, streamError]);
+
+  // Sync stream spec → editor text + local spec
+  useEffect(() => {
+    if (streamIsStreaming || rawLines.length > 0) {
+      const newJson = JSON.stringify(streamSpec, null, 2);
+      fromStreamRef.current = true;
+      setJsonText(newJson);
+      setSpec(streamSpec);
+    }
+  }, [streamSpec, streamIsStreaming, rawLines.length]);
+
+  const handleChatSend = useCallback(
+    async (prompt: string) => {
+      setMessages((prev) => [...prev, { role: "user", content: prompt }]);
+      const schemas = layerDataCache.getSchemas();
+      await send(prompt, {
+        previousSpec: specRef.current,
+        layerSchemas: Object.keys(schemas).length > 0 ? schemas : undefined,
+      });
+    },
+    [send],
+  );
+
+  const handleChatStop = useCallback(() => {
+    stop();
+  }, [stop]);
+
+  const handleChatClear = useCallback(() => {
+    setMessages([]);
+  }, []);
+
+  const handleChatClose = useCallback(() => {
+    setChatOpen(false);
+  }, []);
+
   const handleScreenshot = useCallback(async () => {
     setScreenshotLoading(true);
     try {
@@ -87,7 +275,13 @@ export function Playground() {
     }
   }, [jsonText]);
 
+  // Editor text → spec (debounced) — skip if update came from stream
   useEffect(() => {
+    if (fromStreamRef.current) {
+      fromStreamRef.current = false;
+      return;
+    }
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     debounceRef.current = setTimeout(() => {
@@ -98,8 +292,6 @@ export function Playground() {
           setSpec(result.data as MapSpec);
           setError(null);
         } else {
-          // Still update the map with what we can parse —
-          // show the validation error but render best-effort
           setSpec(parsed as MapSpec);
           setError(result.error);
         }
@@ -124,6 +316,22 @@ export function Playground() {
   }, [isFullscreen]);
 
   const staticCode = generateStaticCode(spec);
+
+  // Chat panel content shared by desktop sidebar and mobile sheet
+  const chatPanel = (
+    <div className="flex flex-col flex-1 min-w-0 min-h-0">
+      <ChatSidebar
+        messages={messages}
+        isStreaming={streamIsStreaming}
+        streamingText={streamText}
+        onSend={handleChatSend}
+        onStop={handleChatStop}
+        onClear={handleChatClear}
+        onClose={handleChatClose}
+        inputRef={chatInputRef}
+      />
+    </div>
+  );
 
   return (
     <>
@@ -199,7 +407,7 @@ export function Playground() {
                   </svg>
                 )}
               </button>
-              {/* Embed button — opens clean map in new tab */}
+              {/* Embed button */}
               <button
                 onClick={() => {
                   const compressed = compressToEncodedURIComponent(jsonText);
@@ -337,6 +545,54 @@ export function Playground() {
           </div>
         </div>
       </div>
+
+      {/* Ask AI floating button — visible when chat is closed */}
+      {!chatOpen && (
+        <button
+          onClick={() => {
+            setChatOpen(true);
+            setTimeout(() => chatInputRef.current?.focus(), 200);
+          }}
+          className="fixed z-50 bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-4 flex items-center gap-2 px-4 py-2 rounded-lg border bg-background text-primary shadow-lg hover:bg-primary hover:text-primary-foreground transition-colors text-sm font-medium"
+          aria-label="Ask AI"
+        >
+          Ask AI
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 text-xs opacity-60 font-mono">
+            <span>&#8984;</span>K
+          </kbd>
+        </button>
+      )}
+
+      {/* Desktop: resizable side pane */}
+      <aside
+        className={`hidden sm:flex fixed top-0 right-0 bottom-0 z-40 border-l bg-background transition-transform duration-150 ease-in-out ${
+          chatOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        style={{ width: desktopWidth }}
+        aria-hidden={!chatOpen}
+      >
+        {/* Resize handle */}
+        <div
+          onPointerDown={handleResizePointerDown}
+          className="absolute top-0 bottom-0 left-0 w-1.5 cursor-col-resize hover:bg-ring/30 active:bg-ring/50 transition-colors z-10"
+        />
+        {chatPanel}
+      </aside>
+
+      {/* Mobile: Sheet overlay/drawer */}
+      {hasMounted && !isDesktop && (
+        <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+          <SheetContent
+            side="right"
+            overlayClassName="!bg-background"
+            className="!inset-0 !w-full !h-full !max-w-none p-0 flex flex-col"
+            style={{ backgroundColor: "var(--background)", opacity: 1 }}
+          >
+            <SheetTitle className="sr-only">AI Chat</SheetTitle>
+            {chatPanel}
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* Fullscreen overlay */}
       {isFullscreen && (

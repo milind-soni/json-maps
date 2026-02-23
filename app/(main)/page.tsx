@@ -31,7 +31,10 @@ export default function Home() {
 
         <div className="flex gap-3 justify-center mt-6">
           <Button size="lg" asChild>
-            <Link href="/docs">Get Started</Link>
+            <Link href="/playground">Playground</Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
+            <Link href="/docs">Docs</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <a
@@ -277,8 +280,11 @@ export default function MyMap() {
             </code>
             <CopyButton text="npm install json-maps" />
           </div>
-          <div>
+          <div className="flex gap-3 justify-center">
             <Button asChild>
+              <Link href="/playground">Try the Playground</Link>
+            </Button>
+            <Button variant="outline" asChild>
               <Link href="/docs">Documentation</Link>
             </Button>
           </div>

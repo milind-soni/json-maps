@@ -13,6 +13,7 @@ export interface TokenUsage {
 type ParsedLine =
   | { type: "patch"; patch: JsonPatch }
   | { type: "usage"; usage: TokenUsage }
+  | { type: "text"; text: string }
   | null;
 
 interface JsonPatch {
@@ -22,9 +23,13 @@ interface JsonPatch {
 }
 
 function parseLine(line: string): ParsedLine {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("//")) return null;
+
+  // Skip markdown code fences the AI wraps around patches
+  if (/^```/.test(trimmed)) return null;
+
   try {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("//")) return null;
     const parsed = JSON.parse(trimmed);
 
     if (parsed.__meta === "usage") {
@@ -38,9 +43,18 @@ function parseLine(line: string): ParsedLine {
       };
     }
 
-    return { type: "patch", patch: parsed as JsonPatch };
-  } catch {
+    if (parsed.__meta === "error") {
+      return { type: "text", text: `Error: ${parsed.message}` };
+    }
+
+    if (parsed.op && parsed.path) {
+      return { type: "patch", patch: parsed as JsonPatch };
+    }
+
     return null;
+  } catch {
+    // Non-JSON line = text from the AI
+    return { type: "text", text: trimmed };
   }
 }
 
@@ -105,7 +119,10 @@ export interface UseMapStreamReturn {
   error: Error | null;
   usage: TokenUsage | null;
   rawLines: string[];
+  streamText: string;
   send: (prompt: string, context?: { previousSpec?: MapSpec; layerSchemas?: Record<string, unknown> }) => Promise<void>;
+  stop: () => void;
+  setSpec: (spec: MapSpec) => void;
   clear: () => void;
 }
 
@@ -119,6 +136,7 @@ export function useMapStream({
   const [error, setError] = useState<Error | null>(null);
   const [usage, setUsage] = useState<TokenUsage | null>(null);
   const [rawLines, setRawLines] = useState<string[]>([]);
+  const [streamText, setStreamText] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const clear = useCallback(() => {
@@ -135,6 +153,7 @@ export function useMapStream({
       setError(null);
       setUsage(null);
       setRawLines([]);
+      setStreamText("");
 
       let currentSpec: MapSpec = context?.previousSpec
         ? { ...context.previousSpec }
@@ -185,6 +204,8 @@ export function useMapStream({
             if (!result) continue;
             if (result.type === "usage") {
               setUsage(result.usage);
+            } else if (result.type === "text") {
+              setStreamText((prev) => prev ? prev + "\n" + result.text : result.text);
             } else {
               setRawLines((prev) => [...prev, trimmed]);
               currentSpec = applyPatch(currentSpec, result.patch);
@@ -198,6 +219,8 @@ export function useMapStream({
           if (result) {
             if (result.type === "usage") {
               setUsage(result.usage);
+            } else if (result.type === "text") {
+              setStreamText((prev) => prev ? prev + "\n" + result.text : result.text);
             } else {
               setRawLines((prev) => [...prev, buffer.trim()]);
               currentSpec = applyPatch(currentSpec, result.patch);
@@ -253,5 +276,9 @@ export function useMapStream({
     };
   }, []);
 
-  return { spec, isStreaming, error, usage, rawLines, send, clear };
+  const stop = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  return { spec, isStreaming, error, usage, rawLines, streamText, send, stop, setSpec, clear };
 }
