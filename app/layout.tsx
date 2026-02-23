@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PAGE_TITLES } from "@/lib/page-titles";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -13,14 +14,16 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
 });
 
+const DESCRIPTION =
+  "Describe a map as JSON, get an interactive map. AI-ready declarative map specs with markers, routes, layers, and data visualization.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://jsonmaps.dev"),
   title: {
-    default: "json-maps | Declarative Maps from JSON",
+    default: `json-maps | ${PAGE_TITLES[""]}`,
     template: "%s | json-maps",
   },
-  description:
-    "Describe a map as JSON, get an interactive map. AI-ready declarative map specs with markers, routes, layers, and data visualization.",
+  description: DESCRIPTION,
   keywords: [
     "json-maps",
     "declarative maps",
@@ -38,15 +41,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://jsonmaps.dev",
     siteName: "json-maps",
-    title: "json-maps | Declarative Maps from JSON",
-    description:
-      "Describe a map as JSON, get an interactive map. AI-ready declarative map specs with markers, routes, layers, and data visualization.",
+    title: `json-maps | ${PAGE_TITLES[""]}`,
+    description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "json-maps | Declarative Maps from JSON",
-    description:
-      "Describe a map as JSON, get an interactive map. AI-ready declarative map specs with markers, routes, layers, and data visualization.",
+    title: `json-maps | ${PAGE_TITLES[""]}`,
+    description: DESCRIPTION,
   },
   robots: {
     index: true,
