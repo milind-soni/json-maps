@@ -156,6 +156,7 @@ export function Demo() {
   const [currentSpec, setCurrentSpec] = useState<MapSpec>({ basemap: "light" });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [screenshotLoading, setScreenshotLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -238,6 +239,26 @@ export function Demo() {
       };
     }
   }, [isFullscreen]);
+
+  const handleScreenshot = useCallback(async () => {
+    setScreenshotLoading(true);
+    try {
+      const compressed = compressToEncodedURIComponent(JSON.stringify(currentSpec, null, 2));
+      const res = await fetch(`/api/screenshot?spec=${compressed}&width=1280&height=720&scale=2`);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "map-screenshot.png";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently fail
+    } finally {
+      setScreenshotLoading(false);
+    }
+  }, [currentSpec]);
 
   const stopGeneration = useCallback(() => {
     if (mode === "simulation") {
@@ -551,6 +572,42 @@ export function Demo() {
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
                   </svg>
+                </button>
+                {/* Screenshot button */}
+                <button
+                  onClick={handleScreenshot}
+                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  aria-label="Screenshot"
+                  title="Download as PNG"
+                  disabled={screenshotLoading}
+                >
+                  {screenshotLoading ? (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="animate-spin"
+                    >
+                      <circle cx="12" cy="12" r="10" strokeDasharray="32" strokeDashoffset="10" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                      <circle cx="12" cy="13" r="3" />
+                    </svg>
+                  )}
                 </button>
                 {/* Fullscreen button */}
                 <button
