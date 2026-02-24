@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Demo } from "@/components/demo";
 import { Code } from "@/components/code";
 import { CopyButton } from "@/components/copy-button";
+import { EmailSignup } from "@/components/email-signup";
 
 export default function Home() {
   return (
@@ -267,6 +268,17 @@ export default function MyMap() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Stay updated */}
+      <section className="border-t border-border">
+        <div className="max-w-4xl mx-auto px-6 py-16 text-center">
+          <h2 className="text-lg font-semibold mb-2">Stay updated</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Get notified about new features and updates.
+          </p>
+          <EmailSignup source="homepage" />
         </div>
       </section>
 

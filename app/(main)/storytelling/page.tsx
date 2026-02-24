@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { EmailSignup } from "@/components/email-signup";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -44,6 +45,13 @@ export default function StorytellingPage() {
             to create guided explorations of geographic data.
           </p>
         </div>
+      </div>
+
+      <div className="mb-12">
+        <p className="text-sm text-muted-foreground mb-4">
+          Get notified when storytelling launches
+        </p>
+        <EmailSignup source="storytelling" />
       </div>
 
       <div className="flex gap-3 justify-center">
