@@ -54,15 +54,18 @@ export function MapControls({
   const position = controls.position ?? "top-right";
   const posClass = POSITION_CLASSES[position] ?? POSITION_CLASSES["top-right"];
   const [bearing, setBearing] = useState(0);
+  const [pitch, setPitch] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Track bearing for compass rotation
+  // Track bearing + pitch for 3D compass
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !controls.compass) return;
     const onRotate = () => setBearing(map.getBearing());
+    const onPitch = () => setPitch(map.getPitch());
     map.on("rotate", onRotate);
-    return () => { map.off("rotate", onRotate); };
+    map.on("pitch", onPitch);
+    return () => { map.off("rotate", onRotate); map.off("pitch", onPitch); };
   }, [mapRef, controls.compass]);
 
   // Track fullscreen changes
@@ -102,7 +105,11 @@ export function MapControls({
           <ControlButton onClick={() => mapRef.current?.easeTo({ bearing: 0, pitch: 0 })} title="Reset bearing" dark={dark}>
             <svg
               width="14" height="14" viewBox="0 0 14 14" fill="none"
-              style={{ transform: `rotate(${-bearing}deg)`, transition: "transform 0.2s" }}
+              style={{
+                transform: `rotateX(${pitch * 0.6}deg) rotateZ(${-bearing}deg)`,
+                transformStyle: "preserve-3d",
+                transition: "transform 0.2s",
+              }}
             >
               <polygon points="7,1 9,7 7,6 5,7" fill="#e74c3c" />
               <polygon points="7,13 5,7 7,8 9,7" fill={dark ? "#64748b" : "#94a3b8"} />
