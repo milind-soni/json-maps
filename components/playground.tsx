@@ -69,7 +69,7 @@ export function Playground() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Chat state
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
   const [isDesktop, setIsDesktop] = useState(false);

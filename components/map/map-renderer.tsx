@@ -45,15 +45,20 @@ interface MarkerPortals {
 
 export function MapRenderer({
   spec,
+  className,
+  style,
   components,
   children,
   routingProvider = defaultRoutingProvider,
   onViewportChange,
+  onMapClick,
   onMarkerClick,
   onMarkerDragStart,
   onMarkerDrag,
   onMarkerDragEnd,
   onLayerClick,
+  onLayerHover,
+  onError,
 }: MapRendererProps) {
   const Marker = components?.Marker ?? DefaultMarker;
   const Popup = components?.Popup ?? DefaultPopup;
@@ -66,8 +71,8 @@ export function MapRenderer({
   const [, setPortalVersion] = useState(0);
 
   // Callback refs — always current, avoids re-registering listeners
-  const callbacksRef = useRef({ onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick });
-  callbacksRef.current = { onViewportChange, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick };
+  const callbacksRef = useRef({ onViewportChange, onMapClick, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick, onLayerHover, onError });
+  callbacksRef.current = { onViewportChange, onMapClick, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick, onLayerHover, onError };
 
   // Map load state for useMap hook
   const [isLoaded, setIsLoaded] = useState(false);
@@ -273,7 +278,7 @@ export function MapRenderer({
       } else if (layerSpec.type === "mvt") {
         addVectorTileLayer(map, id, layerSpec, layerDeps);
       } else if (layerSpec.type === "raster") {
-        addRasterTileLayer(map, id, layerSpec);
+        addRasterTileLayer(map, id, layerSpec, layerDeps);
       } else if (layerSpec.type === "parquet") {
         addParquetLayer(map, id, layerSpec, layerDeps);
       } else if (layerSpec.type === "pmtiles") {
@@ -342,6 +347,12 @@ export function MapRenderer({
         pitch: map.getPitch(),
         bearing: map.getBearing(),
       });
+    });
+
+    // Map click callback — fires only when clicking empty space (not markers/layers)
+    map.on("click", (e) => {
+      if (e.defaultPrevented) return;
+      callbacksRef.current.onMapClick?.([e.lngLat.lng, e.lngLat.lat]);
     });
 
     // Sync layers after initial style load (addSource/addLayer need style ready)
@@ -503,7 +514,7 @@ export function MapRenderer({
 
   return (
     <MapContext.Provider value={contextValue}>
-      <div ref={containerRef} className="relative w-full h-full">
+      <div ref={containerRef} className={`relative w-full h-full ${className ?? ""}`} style={style}>
         {spec.controls && (
           <MapControls
             controls={spec.controls}

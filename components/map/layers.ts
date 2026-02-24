@@ -187,10 +187,11 @@ export function addGeoJsonLayer(
       deps.layerHandlersRef.current[`${sourceId}-cluster`] = clusterHandlers;
     }
 
-    // Hover tooltip
-    if (layer.tooltip && layer.tooltip.length > 0) {
-      const isText = typeof layer.tooltip === "string";
-      const columns: string[] = isText ? ["_text"] : layer.tooltip as string[];
+    // Hover tooltip + onLayerHover callback
+    {
+      const hasTooltip = layer.tooltip && layer.tooltip.length > 0;
+      const isText = hasTooltip && typeof layer.tooltip === "string";
+      const columns: string[] = hasTooltip ? (isText ? ["_text"] : layer.tooltip as string[]) : [];
       const subLayers = [
         `${sourceId}-fill`,
         `${sourceId}-circle`,
@@ -203,22 +204,25 @@ export function addGeoJsonLayer(
         const onMove = (e: any) => {
           if (!e.features || e.features.length === 0) return;
           map.getCanvas().style.cursor = "pointer";
-          if (isText) {
-            deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
-          } else {
-            const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
-            deps.setLayerTooltip({ properties: props, columns });
+          const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
+          if (hasTooltip) {
+            if (isText) {
+              deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
+            } else {
+              deps.setLayerTooltip({ properties: props, columns });
+            }
+            const popup = deps.layerTooltipPopupRef.current;
+            if (popup) popup.setLngLat(e.lngLat).addTo(map);
           }
-
-          const popup = deps.layerTooltipPopupRef.current;
-          if (popup) {
-            popup.setLngLat(e.lngLat).addTo(map);
-          }
+          deps.callbacksRef.current.onLayerHover?.(id, [e.lngLat.lng, e.lngLat.lat], props);
         };
         const onLeave = () => {
           map.getCanvas().style.cursor = "";
-          deps.setLayerTooltip(null);
-          deps.layerTooltipPopupRef.current?.remove();
+          if (hasTooltip) {
+            deps.setLayerTooltip(null);
+            deps.layerTooltipPopupRef.current?.remove();
+          }
+          deps.callbacksRef.current.onLayerHover?.(null, null);
         };
 
         map.on("mousemove", subLayer, onMove);
@@ -251,7 +255,9 @@ export function addGeoJsonLayer(
       deps.layerHandlersRef.current[sourceId] = [...existing, ...clickHandlers];
     }
   } catch (err) {
-    console.warn(`[json-maps] Failed to add layer "${id}":`, err);
+    const msg = `Failed to add layer "${id}": ${err instanceof Error ? err.message : err}`;
+    console.warn(`[json-maps] ${msg}`);
+    deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
     try { removeLayer(map, id, deps); } catch { /* ignore */ }
   }
 }
@@ -369,7 +375,9 @@ export function addRouteLayer(
         })
         .catch((err: unknown) => {
           deps.pendingRouteFetchRef.current.delete(id);
-          console.warn(`[json-maps] Routing failed for "${id}", falling back to straight line:`, err);
+          const msg = `Routing failed for "${id}", falling back to straight line: ${err instanceof Error ? err.message : err}`;
+          console.warn(`[json-maps] ${msg}`);
+          deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
           if (deps.mapRef.current !== map) return;
           // Fallback: straight line between from/to
           const fallback = [layer.from!, ...(layer.waypoints ?? []), layer.to!];
@@ -379,7 +387,9 @@ export function addRouteLayer(
       renderRouteOnMap(map, id, layer, layer.coordinates, deps);
     }
   } catch (err) {
-    console.warn(`[json-maps] Failed to add route "${id}":`, err);
+    const msg = `Failed to add route "${id}": ${err instanceof Error ? err.message : err}`;
+    console.warn(`[json-maps] ${msg}`);
+    deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
     try { removeLayer(map, id, deps); } catch { /* ignore */ }
   }
 }
@@ -437,7 +447,9 @@ export function addHeatmapLayer(
       paint,
     });
   } catch (err) {
-    console.warn(`[json-maps] Failed to add heatmap "${id}":`, err);
+    const msg = `Failed to add heatmap "${id}": ${err instanceof Error ? err.message : err}`;
+    console.warn(`[json-maps] ${msg}`);
+    deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
     try { removeLayer(map, id, deps); } catch { /* ignore */ }
   }
 }
@@ -537,10 +549,11 @@ export function addVectorTileLayer(
       },
     });
 
-    // Tooltip (same pattern as GeoJSON)
-    if (layer.tooltip && layer.tooltip.length > 0) {
-      const isText = typeof layer.tooltip === "string";
-      const columns: string[] = isText ? ["_text"] : layer.tooltip as string[];
+    // Tooltip + onLayerHover (same pattern as GeoJSON)
+    {
+      const hasTooltip = layer.tooltip && layer.tooltip.length > 0;
+      const isText = hasTooltip && typeof layer.tooltip === "string";
+      const columns: string[] = hasTooltip ? (isText ? ["_text"] : layer.tooltip as string[]) : [];
       const subLayers = [`${sourceId}-fill`, `${sourceId}-circle`, `${sourceId}-line`];
       const handlers: LayerHandler[] = [];
 
@@ -549,19 +562,25 @@ export function addVectorTileLayer(
         const onMove = (e: any) => {
           if (!e.features || e.features.length === 0) return;
           map.getCanvas().style.cursor = "pointer";
-          if (isText) {
-            deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
-          } else {
-            const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
-            deps.setLayerTooltip({ properties: props, columns });
+          const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
+          if (hasTooltip) {
+            if (isText) {
+              deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
+            } else {
+              deps.setLayerTooltip({ properties: props, columns });
+            }
+            const popup = deps.layerTooltipPopupRef.current;
+            if (popup) popup.setLngLat(e.lngLat).addTo(map);
           }
-          const popup = deps.layerTooltipPopupRef.current;
-          if (popup) popup.setLngLat(e.lngLat).addTo(map);
+          deps.callbacksRef.current.onLayerHover?.(id, [e.lngLat.lng, e.lngLat.lat], props);
         };
         const onLeave = () => {
           map.getCanvas().style.cursor = "";
-          deps.setLayerTooltip(null);
-          deps.layerTooltipPopupRef.current?.remove();
+          if (hasTooltip) {
+            deps.setLayerTooltip(null);
+            deps.layerTooltipPopupRef.current?.remove();
+          }
+          deps.callbacksRef.current.onLayerHover?.(null, null);
         };
         map.on("mousemove", subLayer, onMove);
         map.on("mouseleave", subLayer, onLeave);
@@ -587,7 +606,9 @@ export function addVectorTileLayer(
       deps.layerHandlersRef.current[sourceId] = [...existing, ...clickHandlers];
     }
   } catch (err) {
-    console.warn(`[json-maps] Failed to add vector tile layer "${id}":`, err);
+    const msg = `Failed to add vector tile layer "${id}": ${err instanceof Error ? err.message : err}`;
+    console.warn(`[json-maps] ${msg}`);
+    deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
     try { removeLayer(map, id, deps); } catch { /* ignore */ }
   }
 }
@@ -600,6 +621,7 @@ export function addRasterTileLayer(
   map: maplibregl.Map,
   id: string,
   layer: RasterTileLayerSpec,
+  deps?: LayerDeps,
 ) {
   const sourceId = `jm-${id}`;
 
@@ -631,7 +653,9 @@ export function addRasterTileLayer(
       },
     });
   } catch (err) {
-    console.warn(`[json-maps] Failed to add raster tile layer "${id}":`, err);
+    const msg = `Failed to add raster tile layer "${id}": ${err instanceof Error ? err.message : err}`;
+    console.warn(`[json-maps] ${msg}`);
+    deps?.callbacksRef.current.onError?.({ layerId: id, message: msg });
     try {
       const subLayers = [`${sourceId}-raster`];
       for (const layerId of subLayers) {
@@ -700,7 +724,9 @@ export function addParquetLayer(
     })
     .catch((err: unknown) => {
       deps.pendingRouteFetchRef.current.delete(id);
-      console.warn(`[json-maps] Failed to load parquet "${id}":`, err);
+      const msg = `Failed to load parquet "${id}": ${err instanceof Error ? err.message : err}`;
+      console.warn(`[json-maps] ${msg}`);
+      deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
     });
 }
 
@@ -801,10 +827,11 @@ export function addPMTilesLayer(
         },
       });
 
-      // Tooltip
-      if (layer.tooltip && layer.tooltip.length > 0) {
-        const isText = typeof layer.tooltip === "string";
-        const columns: string[] = isText ? ["_text"] : layer.tooltip as string[];
+      // Tooltip + onLayerHover
+      {
+        const hasTooltip = layer.tooltip && layer.tooltip.length > 0;
+        const isText = hasTooltip && typeof layer.tooltip === "string";
+        const columns: string[] = hasTooltip ? (isText ? ["_text"] : layer.tooltip as string[]) : [];
         const subLayers = [`${sourceId}-fill`, `${sourceId}-circle`, `${sourceId}-line`];
         const handlers: LayerHandler[] = [];
 
@@ -813,19 +840,25 @@ export function addPMTilesLayer(
           const onMove = (e: any) => {
             if (!e.features || e.features.length === 0) return;
             map.getCanvas().style.cursor = "pointer";
-            if (isText) {
-              deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
-            } else {
-              const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
-              deps.setLayerTooltip({ properties: props, columns });
+            const props = (e.features[0].properties ?? {}) as Record<string, unknown>;
+            if (hasTooltip) {
+              if (isText) {
+                deps.setLayerTooltip({ properties: { _text: layer.tooltip as string }, columns });
+              } else {
+                deps.setLayerTooltip({ properties: props, columns });
+              }
+              const popup = deps.layerTooltipPopupRef.current;
+              if (popup) popup.setLngLat(e.lngLat).addTo(map);
             }
-            const popup = deps.layerTooltipPopupRef.current;
-            if (popup) popup.setLngLat(e.lngLat).addTo(map);
+            deps.callbacksRef.current.onLayerHover?.(id, [e.lngLat.lng, e.lngLat.lat], props);
           };
           const onLeave = () => {
             map.getCanvas().style.cursor = "";
-            deps.setLayerTooltip(null);
-            deps.layerTooltipPopupRef.current?.remove();
+            if (hasTooltip) {
+              deps.setLayerTooltip(null);
+              deps.layerTooltipPopupRef.current?.remove();
+            }
+            deps.callbacksRef.current.onLayerHover?.(null, null);
           };
           map.on("mousemove", subLayer, onMove);
           map.on("mouseleave", subLayer, onLeave);
@@ -872,7 +905,9 @@ export function addPMTilesLayer(
       });
     }
   } catch (err) {
-    console.warn(`[json-maps] Failed to add PMTiles layer "${id}":`, err);
+    const msg = `Failed to add PMTiles layer "${id}": ${err instanceof Error ? err.message : err}`;
+    console.warn(`[json-maps] ${msg}`);
+    deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
     try { removeLayer(map, id, deps); } catch { /* ignore */ }
   }
 }

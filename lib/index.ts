@@ -35,6 +35,7 @@ export type {
   WidgetRowSpec,
   SQLWidgetConfig,
   ViewportBounds,
+  MapError,
 } from "./spec";
 
 export { BASEMAP_STYLES, resolveBasemapStyle } from "./spec";
