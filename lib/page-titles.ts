@@ -7,7 +7,7 @@
  */
 export const PAGE_TITLES: Record<string, string> = {
   // Home
-  "": "Declarative Maps from JSON",
+  "": "The map component AI can write",
 
   // Top-level pages
   playground: "Playground",

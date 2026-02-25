@@ -10,15 +10,14 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
-        <p className="text-xs sm:text-sm font-medium text-muted-foreground tracking-widest uppercase mb-4">
-          Declarative Maps from JSON
-        </p>
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter mb-6">
-          AI &rarr; JSON &rarr; Map
+          The map component
+          <br />
+          <span className="text-muted-foreground">AI can write</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12 leading-relaxed">
-          Describe an interactive map as JSON, get markers, routes, layers, and
-          data visualization. AI-ready specs with guardrailed components.
+          One JSON spec. Markers, layers, choropleths, SQL widgets.
+          Stream it from any LLM and watch the map build itself.
         </p>
 
         <Demo />
@@ -52,181 +51,139 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it works */}
+      {/* Built for */}
       <section className="border-t border-border">
         <div className="max-w-5xl mx-auto px-6 py-24">
           <div className="grid md:grid-cols-3 gap-12">
             <div>
-              <div className="text-xs text-muted-foreground font-mono mb-3">
-                01
-              </div>
               <h3 className="text-lg font-semibold mb-2">
-                Define Your Map Spec
+                AI applications
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Describe viewport, layers, markers, routes, and data sources as
-                a JSON spec. Every property is typed and validated.
+                Your LLM outputs a JSON spec. MapRenderer renders it. Stream
+                the response and watch markers, layers, and choropleths appear
+                token by token.
               </p>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground font-mono mb-3">
-                02
-              </div>
-              <h3 className="text-lg font-semibold mb-2">AI Generates</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Data dashboards
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Describe what you want in natural language. AI generates a map
-                spec constrained to your catalog of layers and components.
+                Load Parquet, PMTiles, and GeoJSON directly. Add DuckDB SQL
+                widgets that query your data in the browser with
+                viewport-reactive aggregations.
               </p>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground font-mono mb-3">
-                03
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Render the Map</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Rapid prototyping
+              </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                One component renders it all. Stream the response and watch
-                markers, routes, and layers appear progressively.
+                One component, one spec. Go from an idea to an interactive map
+                in minutes. Export the schema and hand it to any model as a
+                tool definition.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Code example */}
+      {/* Code examples */}
       <section className="border-t border-border">
         <div className="max-w-5xl mx-auto px-6 py-24">
           <div className="grid lg:grid-cols-2 gap-12">
             <div className="min-w-0">
               <h2 className="text-2xl font-semibold mb-4">
-                Write a map spec
+                Wire it to your LLM
               </h2>
               <p className="text-muted-foreground mb-6">
-                Viewport, markers, routes, layers, controls &mdash; all as JSON.
-              </p>
-              <Code lang="json">{`{
-  "center": [-73.98, 40.75],
-  "zoom": 12,
-  "layers": {
-    "cafes": {
-      "type": "geojson",
-      "data": "https://data.city/cafes.geojson",
-      "cluster": true,
-      "clusterOptions": {
-        "radius": 50,
-        "colors": ["#22c55e", "#eab308", "#ef4444"]
-      }
-    }
-  },
-  "markers": {
-    "home": {
-      "coordinates": [-73.98, 40.75],
-      "label": "Home",
-      "popup": { "title": "My Location" }
-    }
-  },
-  "controls": {
-    "zoom": true,
-    "compass": true
-  }
-}`}</Code>
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-2xl font-semibold mb-4">Render it</h2>
-              <p className="text-muted-foreground mb-6">
-                One component. One spec. Interactive map.
+                Stream a JSON spec from any model. The map updates as tokens
+                arrive.
               </p>
               <Code lang="tsx">{`import { MapRenderer } from "json-maps";
+import { useState } from "react";
+import { readStream } from "./stream";
 
-const spec = {
-  center: [-73.98, 40.75],
-  zoom: 12,
-  layers: {
-    cafes: {
-      type: "geojson",
-      data: "https://data.city/cafes.geojson",
-      cluster: true,
-    },
-  },
-  markers: {
-    home: {
-      coordinates: [-73.98, 40.75],
-      label: "Home",
-    },
-  },
-  controls: { zoom: true, compass: true },
-};
+export default function AIMap({ prompt }: { prompt: string }) {
+  const [spec, setSpec] = useState({});
 
-export default function MyMap() {
-  return <MapRenderer spec={spec} />;
+  async function generate() {
+    const res = await fetch("/api/map", {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+    });
+    for await (const chunk of readStream(res)) {
+      setSpec(JSON.parse(chunk));
+    }
+  }
+
+  return (
+    <>
+      <button onClick={generate}>Generate</button>
+      <MapRenderer spec={spec} />
+    </>
+  );
 }`}</Code>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Data layers */}
-      <section className="border-t border-border">
-        <div className="max-w-5xl mx-auto px-6 py-24">
-          <div className="grid lg:grid-cols-2 gap-12">
             <div className="min-w-0">
               <h2 className="text-2xl font-semibold mb-4">
-                Data-driven layers
+                Data-driven spec
               </h2>
               <p className="text-muted-foreground mb-6">
-                Choropleth, heatmap, fill, and circle layers with color scales
-                and legends &mdash; all from JSON.
+                Choropleth with legend, tooltips, and a DuckDB SQL
+                widget &mdash; all from JSON.
               </p>
               <Code lang="json">{`{
   "layers": {
-    "population": {
+    "states": {
       "type": "geojson",
-      "data": "https://data.gov/states.geojson",
+      "data": "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json",
       "style": {
         "fillColor": {
           "type": "continuous",
-          "attr": "population",
+          "attr": "density",
           "palette": "Sunset",
-          "domain": [0, 40000000]
-        },
-        "opacity": 0.7
+          "domain": [0, 1000]
+        }
       },
-      "tooltip": ["name", "population"]
+      "tooltip": ["name", "density"]
     }
   },
   "legend": {
-    "pop": {
-      "layer": "population",
-      "title": "Population"
+    "density": { "layer": "states", "title": "Density" }
+  },
+  "widgets": {
+    "avg": {
+      "sql": {
+        "query": "SELECT ROUND(AVG(density)) as avg FROM states",
+        "refreshOn": "viewport"
+      },
+      "value": "{{avg}} per sq mi"
     }
   }
 }`}</Code>
             </div>
-            <div className="min-w-0">
-              <h2 className="text-2xl font-semibold mb-4">
-                Actions &amp; interactions
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                React callbacks for marker clicks, drags, viewport changes,
-                and layer clicks. Full control over interactions.
-              </p>
-              <Code lang="tsx">{`import { MapRenderer } from "json-maps";
+          </div>
+        </div>
+      </section>
 
-<MapRenderer
-  spec={spec}
-  onMarkerClick={(id, coords) => {
-    console.log("Clicked:", id, coords);
-  }}
-  onViewportChange={(viewport) => {
-    setSpec(prev => ({ ...prev, ...viewport }));
-  }}
-  onMarkerDragEnd={(id, coords) => {
-    updateMarkerPosition(id, coords);
-  }}
-  onLayerClick={(layerId, coords) => {
-    showFeatureDetails(layerId, coords);
-  }}
-/>`}</Code>
-            </div>
+      {/* Data formats */}
+      <section className="border-t border-border">
+        <div className="max-w-5xl mx-auto px-6 py-16 text-center">
+          <div className="flex items-center justify-center gap-3 text-sm font-mono flex-wrap">
+            {["GeoJSON", "Parquet", "PMTiles", "MVT", "Raster"].map(
+              (fmt, i) => (
+                <span key={fmt} className="flex items-center gap-3">
+                  {i > 0 && (
+                    <span className="text-muted-foreground/40">
+                      &middot;
+                    </span>
+                  )}
+                  <span className="text-foreground">{fmt}</span>
+                </span>
+              )
+            )}
           </div>
         </div>
       </section>
@@ -234,32 +191,34 @@ export default function MyMap() {
       {/* Features */}
       <section className="border-t border-border">
         <div className="max-w-5xl mx-auto px-6 py-24">
-          <h2 className="text-2xl font-semibold mb-12 text-center">Features</h2>
+          <h2 className="text-2xl font-semibold mb-12 text-center">
+            Everything you need
+          </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                title: "Declarative Specs",
-                desc: "Describe an entire interactive map as JSON. Viewport, layers, markers, routes, controls, legends.",
+                title: "JSON schema for LLMs",
+                desc: "Export the spec schema and give it to any model as a tool definition. Typed, validated, constrained generation.",
               },
               {
-                title: "Data Layers",
-                desc: "Choropleth, heatmap, clusters, fill, and circle layers with data-driven color scales.",
+                title: "Progressive streaming",
+                desc: "Stream JSON from your AI backend. The map updates token by token as markers, layers, and controls arrive.",
               },
               {
-                title: "Streaming",
-                desc: "Progressive rendering as JSON streams from AI. Watch markers and layers appear in real time.",
+                title: "Browser-native SQL",
+                desc: "DuckDB-WASM widgets query your data in the browser. Viewport-reactive aggregations update as users pan and zoom.",
               },
               {
-                title: "AI-Ready",
-                desc: "Define a catalog of map components. AI generates specs constrained to your catalog.",
+                title: "Modern data formats",
+                desc: "Parquet, PMTiles, MVT, raster tiles. Load millions of rows directly from cloud storage without a tile server.",
               },
               {
-                title: "MapLibre Powered",
-                desc: "Built on MapLibre GL. Open source, no API keys required. Full access to the underlying map.",
+                title: "One component",
+                desc: "<MapRenderer spec={spec} /> with className, style, and children. That's the entire API surface.",
               },
               {
-                title: "Interactions",
-                desc: "Marker click, drag, viewport change, and layer click callbacks. Controlled viewport with onViewportChange.",
+                title: "Production callbacks",
+                desc: "onMapClick, onLayerHover, onMarkerDragEnd, onViewportChange, onError. Full control over every interaction.",
               },
             ].map((feature) => (
               <div key={feature.title}>
@@ -285,7 +244,7 @@ export default function MyMap() {
       {/* CTA */}
       <section className="border-t border-border">
         <div className="max-w-4xl mx-auto px-6 py-24 text-center">
-          <h2 className="text-2xl font-semibold mb-4">Get started</h2>
+          <h2 className="text-2xl font-semibold mb-4">Start building</h2>
           <div className="flex items-center justify-center gap-2 border border-border rounded px-4 py-3 mb-8 mx-auto w-fit">
             <code className="text-sm bg-transparent">
               npm install json-maps

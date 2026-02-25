@@ -15,7 +15,7 @@ const geistMono = localFont({
 });
 
 const DESCRIPTION =
-  "Describe a map as JSON, get an interactive map. AI-ready declarative map specs with markers, routes, layers, and data visualization.";
+  "The map component AI can write. One React component that renders interactive maps from a JSON spec — markers, layers, choropleths, SQL widgets. Stream it from any LLM.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jsonmaps.dev"),
@@ -26,15 +26,19 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   keywords: [
     "json-maps",
-    "declarative maps",
-    "AI map generation",
+    "AI map component",
+    "LLM map generation",
+    "React map component",
+    "JSON map spec",
     "MapLibre",
     "GeoJSON",
-    "interactive maps",
-    "map components",
+    "Parquet",
+    "PMTiles",
+    "DuckDB",
     "choropleth",
-    "heatmap",
-    "map spec",
+    "streaming maps",
+    "AI agent tools",
+    "data visualization",
   ],
   openGraph: {
     type: "website",
