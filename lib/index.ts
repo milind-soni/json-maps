@@ -50,3 +50,13 @@ export type { SystemPromptOptions } from "./catalog";
 export { buildUserPrompt } from "./prompt";
 export { useMapStream } from "./use-map-stream";
 export type { UseMapStreamOptions, UseMapStreamReturn, TokenUsage, ToolCall } from "./use-map-stream";
+
+// Animation
+export { AnimationPlayer } from "../components/animation";
+export type { AnimationPlayerProps, AnimationPlayerHandle } from "../components/animation";
+export type { AnimationSpec, AnimationKeyframe, TextOverlay, EasingType } from "./animation-spec";
+export { interpolateFrame, getTotalFrames, frameToTime } from "./animation-interpolator";
+export type { InterpolatedView, InterpolatedFrame } from "./animation-interpolator";
+export { validateAnimationSpec, autoFixAnimationSpec } from "./animation-spec-schema";
+export { useAnimationStream } from "./use-animation-stream";
+export type { UseAnimationStreamOptions, UseAnimationStreamReturn } from "./use-animation-stream";

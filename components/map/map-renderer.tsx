@@ -311,7 +311,8 @@ export function MapRenderer({
       pitch: spec.pitch ?? 0,
       bearing: spec.bearing ?? 0,
       attributionControl: false,
-    });
+      preserveDrawingBuffer: true,
+    } as maplibregl.MapOptions);
 
     // Apply globe projection if specified (must wait for style to load)
     if (spec.projection === "globe") {

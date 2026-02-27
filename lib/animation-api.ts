@@ -1,25 +1,24 @@
 import { jsonSchema, stepCountIs, streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateSystemPrompt } from "./catalog";
-import { buildUserPrompt } from "./prompt";
+import { generateAnimationSystemPrompt } from "./animation-catalog";
 
-export interface MapGenerateHandlerOptions {
+export interface AnimationGenerateHandlerOptions {
   model?: string;
   temperature?: number;
 }
 
 /**
- * Creates a POST handler for AI map generation.
+ * Creates a POST handler for AI animation generation.
  *
  * Usage in Next.js App Router:
  * ```ts
- * import { createMapGenerateHandler } from "json-maps/api";
- * export const POST = createMapGenerateHandler();
- * export const maxDuration = 30;
+ * import { createAnimationGenerateHandler } from "json-maps/api";
+ * export const POST = createAnimationGenerateHandler();
+ * export const maxDuration = 60;
  * ```
  */
-export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
-  const SYSTEM_PROMPT = generateSystemPrompt();
+export function createAnimationGenerateHandler(options?: AnimationGenerateHandlerOptions) {
+  const SYSTEM_PROMPT = generateAnimationSystemPrompt();
   const modelId = options?.model ?? "claude-haiku-4-5-20251001";
   const temperature = options?.temperature ?? 0.7;
 
@@ -27,11 +26,10 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
     try {
       const { prompt, context } = await req.json();
 
-      const userPrompt = buildUserPrompt(
-        prompt,
-        context?.previousSpec,
-        context?.layerSchemas,
-      );
+      let userPrompt = prompt;
+      if (context?.previousAnimationSpec) {
+        userPrompt = `CURRENT ANIMATION:\n${JSON.stringify(context.previousAnimationSpec)}\n\nUSER REQUEST: ${prompt}\n\nOutput the complete updated AnimationSpec JSON. Modify only what the user requested.`;
+      }
 
       const result = streamText({
         model: anthropic(modelId),
@@ -102,7 +100,7 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
                   event.error instanceof Error
                     ? event.error.message
                     : String(event.error);
-                console.error("[json-maps/api] Stream error event:", msg);
+                console.error("[json-maps/animation-api] Stream error event:", msg);
                 controller.enqueue(
                   encoder.encode(
                     `\n{"__meta":"error","message":${JSON.stringify(msg)}}\n`,
@@ -122,17 +120,16 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
             }
 
             if (!hasOutput) {
-              console.error("[json-maps/api] Stream produced no output");
+              console.error("[json-maps/animation-api] Stream produced no output");
               controller.enqueue(
                 encoder.encode(
-                  `\n{"__meta":"error","message":"Generation failed — no output produced. Check API key."}\n`,
+                  `\n{"__meta":"error","message":"Animation generation failed — no output produced. Check API key."}\n`,
                 ),
               );
             }
           } catch (err) {
-            const msg =
-              err instanceof Error ? err.message : String(err);
-            console.error("[json-maps/api] Stream error:", msg);
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error("[json-maps/animation-api] Stream error:", msg);
             controller.enqueue(
               encoder.encode(
                 `\n{"__meta":"error","message":${JSON.stringify(msg)}}\n`,
@@ -148,12 +145,8 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[json-maps/api] Route error:", msg);
+      console.error("[json-maps/animation-api] Route error:", msg);
       return Response.json({ message: msg }, { status: 500 });
     }
   };
 }
-
-// Re-export animation handler from api entry point
-export { createAnimationGenerateHandler } from "./animation-api";
-export type { AnimationGenerateHandlerOptions } from "./animation-api";
