@@ -317,6 +317,7 @@ const BASE_RULES = [
   'When adding a legend, use "/legend/<id>" with layer (the layer ID to derive from) and optional title. Only add legend when the layer has data-driven color. Legend titles should be short and descriptive (e.g. "Magnitude", "Population") — never include palette names or color scheme names in the title.',
   'For widgets (stat cards / info overlays), use "/widgets/<id>". Include title (small label), value (big number), description (subtitle), and/or rows (key-value pairs). Use position to place them. Only add widgets when the user asks for dashboard-style overlays or stats on the map.',
   'For SQL-powered widgets, add a sql field with query and refreshOn. Table names in the query must match layer IDs. IMPORTANT: Always double-quote table names in SQL (e.g. FROM "india-states", FROM "quakes") — layer IDs often contain hyphens which DuckDB interprets as minus. Use {{column}} templates in value/description/rows to display query results. Use refreshOn "viewport" for live-updating stats as the user pans/zooms, and $west/$east/$south/$north/$zoom for viewport filtering in WHERE clauses. DuckDB-WASM loads lazily — only when a widget has sql.',
+  "You have a `geocode` tool. Use it to look up real coordinates for specific places, addresses, or landmarks instead of guessing. Always prefer geocoded coordinates over approximate ones from memory.",
 ];
 
 const COORDINATE_EXAMPLES = [

@@ -10,9 +10,17 @@ export interface TokenUsage {
   totalTokens: number;
 }
 
+export interface ToolCall {
+  toolName: string;
+  args: Record<string, unknown>;
+  result?: unknown;
+}
+
 type ParsedLine =
   | { type: "patch"; patch: JsonPatch }
   | { type: "usage"; usage: TokenUsage }
+  | { type: "tool-call"; toolCall: { toolName: string; args: Record<string, unknown> } }
+  | { type: "tool-result"; toolResult: { toolName: string; result: unknown } }
   | { type: "text"; text: string }
   | null;
 
@@ -41,6 +49,14 @@ function parseLine(line: string): ParsedLine {
           totalTokens: parsed.totalTokens ?? 0,
         },
       };
+    }
+
+    if (parsed.__meta === "tool-call") {
+      return { type: "tool-call", toolCall: { toolName: parsed.toolName, args: parsed.args } };
+    }
+
+    if (parsed.__meta === "tool-result") {
+      return { type: "tool-result", toolResult: { toolName: parsed.toolName, result: parsed.result } };
     }
 
     if (parsed.__meta === "error") {
@@ -120,6 +136,7 @@ export interface UseMapStreamReturn {
   usage: TokenUsage | null;
   rawLines: string[];
   streamText: string;
+  toolCalls: ToolCall[];
   send: (prompt: string, context?: { previousSpec?: MapSpec; layerSchemas?: Record<string, unknown> }) => Promise<void>;
   stop: () => void;
   setSpec: (spec: MapSpec) => void;
@@ -137,6 +154,7 @@ export function useMapStream({
   const [usage, setUsage] = useState<TokenUsage | null>(null);
   const [rawLines, setRawLines] = useState<string[]>([]);
   const [streamText, setStreamText] = useState("");
+  const [toolCalls, setToolCalls] = useState<ToolCall[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const clear = useCallback(() => {
@@ -154,6 +172,7 @@ export function useMapStream({
       setUsage(null);
       setRawLines([]);
       setStreamText("");
+      setToolCalls([]);
 
       let currentSpec: MapSpec = context?.previousSpec
         ? { ...context.previousSpec }
@@ -204,6 +223,15 @@ export function useMapStream({
             if (!result) continue;
             if (result.type === "usage") {
               setUsage(result.usage);
+            } else if (result.type === "tool-call") {
+              setToolCalls((prev) => [...prev, { ...result.toolCall }]);
+            } else if (result.type === "tool-result") {
+              setToolCalls((prev) => {
+                const updated = [...prev];
+                const last = updated.findLast((t) => t.toolName === result.toolResult.toolName && !t.result);
+                if (last) last.result = result.toolResult.result;
+                return updated;
+              });
             } else if (result.type === "text") {
               setStreamText((prev) => prev ? prev + "\n" + result.text : result.text);
             } else {
@@ -219,6 +247,15 @@ export function useMapStream({
           if (result) {
             if (result.type === "usage") {
               setUsage(result.usage);
+            } else if (result.type === "tool-call") {
+              setToolCalls((prev) => [...prev, { ...result.toolCall }]);
+            } else if (result.type === "tool-result") {
+              setToolCalls((prev) => {
+                const updated = [...prev];
+                const last = updated.findLast((t) => t.toolName === result.toolResult.toolName && !t.result);
+                if (last) last.result = result.toolResult.result;
+                return updated;
+              });
             } else if (result.type === "text") {
               setStreamText((prev) => prev ? prev + "\n" + result.text : result.text);
             } else {
@@ -280,5 +317,5 @@ export function useMapStream({
     abortControllerRef.current?.abort();
   }, []);
 
-  return { spec, isStreaming, error, usage, rawLines, streamText, send, stop, setSpec, clear };
+  return { spec, isStreaming, error, usage, rawLines, streamText, toolCalls, send, stop, setSpec, clear };
 }

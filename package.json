@@ -1,6 +1,6 @@
 {
   "name": "json-maps",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "type": "module",
   "license": "MIT",
   "description": "Declarative map renderer — drop in a JSON spec, get a full interactive map",

@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { jsonSchema, stepCountIs, streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { generateSystemPrompt } from "./catalog";
 import { buildUserPrompt } from "./prompt";
@@ -36,8 +36,39 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
       const result = streamText({
         model: anthropic(modelId),
         system: SYSTEM_PROMPT,
-        prompt: userPrompt,
+        messages: [{ role: "user" as const, content: userPrompt }],
         temperature,
+        stopWhen: stepCountIs(5),
+        tools: {
+          geocode: {
+            description:
+              "Look up coordinates for a place name or address. Returns lat/lng and display name.",
+            inputSchema: jsonSchema<{ query: string }>({
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description:
+                    "Place name, address, or landmark to geocode",
+                },
+              },
+              required: ["query"],
+            }),
+            execute: async ({ query }: { query: string }) => {
+              const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+              const res = await fetch(url, {
+                headers: { "User-Agent": "factmaps/1.0" },
+              });
+              const data = await res.json();
+              if (!data.length) return { error: "No results found" };
+              return {
+                lat: parseFloat(data[0].lat),
+                lng: parseFloat(data[0].lon),
+                display_name: data[0].display_name,
+              };
+            },
+          },
+        },
       });
 
       const encoder = new TextEncoder();
@@ -48,7 +79,21 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
           let hasOutput = false;
           try {
             for await (const event of fullStream) {
-              if (event.type === "text-delta") {
+              if (event.type === "tool-call") {
+                const meta = JSON.stringify({
+                  __meta: "tool-call",
+                  toolName: event.toolName,
+                  args: event.input,
+                });
+                controller.enqueue(encoder.encode(`\n${meta}\n`));
+              } else if (event.type === "tool-result") {
+                const meta = JSON.stringify({
+                  __meta: "tool-result",
+                  toolName: event.toolName,
+                  result: event.output,
+                });
+                controller.enqueue(encoder.encode(`\n${meta}\n`));
+              } else if (event.type === "text-delta") {
                 hasOutput = true;
                 controller.enqueue(encoder.encode(event.text));
               } else if (event.type === "error") {

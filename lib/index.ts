@@ -49,4 +49,4 @@ export { generateSystemPrompt } from "./catalog";
 export type { SystemPromptOptions } from "./catalog";
 export { buildUserPrompt } from "./prompt";
 export { useMapStream } from "./use-map-stream";
-export type { UseMapStreamOptions, UseMapStreamReturn, TokenUsage } from "./use-map-stream";
+export type { UseMapStreamOptions, UseMapStreamReturn, TokenUsage, ToolCall } from "./use-map-stream";
