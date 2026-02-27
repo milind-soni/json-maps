@@ -43,3 +43,10 @@ export { PALETTES } from "./palettes";
 export { validateSpec, autoFixSpec, formatSpecIssues } from "./spec-schema";
 export { osrmProvider, mapboxProvider } from "./routing";
 export type { RoutingProvider, RoutingRequest } from "./routing";
+
+// AI generation utilities
+export { generateSystemPrompt } from "./catalog";
+export type { SystemPromptOptions } from "./catalog";
+export { buildUserPrompt } from "./prompt";
+export { useMapStream } from "./use-map-stream";
+export type { UseMapStreamOptions, UseMapStreamReturn, TokenUsage } from "./use-map-stream";

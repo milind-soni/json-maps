@@ -1,22 +1,37 @@
-# jsonmaps
+# json-maps
 
 Declarative map renderer — drop in a JSON spec, get a full interactive map.
 
 Built on [MapLibre GL](https://maplibre.org/) with [CARTO](https://carto.com/) basemaps. No API keys required.
 
-[Docs](https://jsonmaps.vercel.app/docs) · [Playground](https://jsonmaps.vercel.app/playground)
+[Docs](https://jsonmaps.dev/docs) · [Playground](https://jsonmaps.dev/playground)
 
 ## Install
 
 ```bash
-npm install json-maps maplibre-gl
+npm install json-maps maplibre-gl lucide-react
 ```
 
-## Quick Start
+## Setup
+
+### CSS
+
+Import the json-maps stylesheet in your CSS (includes MapLibre styles, theme variables, and component overrides):
+
+```css
+@import "tailwindcss";
+@import "json-maps/styles.css";
+
+/* Tell Tailwind to scan json-maps for utility classes */
+@source "../node_modules/json-maps/dist";
+```
+
+You can override the default theme by redefining CSS variables in your own `:root` block after the import.
+
+### Quick Start
 
 ```tsx
 "use client";
-import "maplibre-gl/dist/maplibre-gl.css";
 import { MapRenderer } from "json-maps";
 
 const spec = {
@@ -35,7 +50,7 @@ const spec = {
 };
 
 export default function MyMap() {
-  return <MapRenderer spec={spec} />;
+  return <MapRenderer spec={spec} className="h-screen" />;
 }
 ```
 
@@ -79,7 +94,7 @@ Need more? Override the `Marker` component slot with any icon library.
 
 ### Layers
 
-Six layer types:
+Seven layer types:
 
 **GeoJSON** — points, lines, polygons from URL or inline data:
 ```json
@@ -106,7 +121,7 @@ Six layer types:
 
 **Route** — driving/walking/cycling directions via OSRM:
 ```json
-{ "type": "route", "waypoints": [[77.59, 12.97], [72.87, 19.07]], "profile": "driving" }
+{ "type": "route", "from": [-73.98, 40.75], "to": [-73.96, 40.78], "profile": "driving" }
 ```
 
 **Heatmap** — point density visualization:
@@ -116,12 +131,17 @@ Six layer types:
 
 **MVT** — vector tiles:
 ```json
-{ "type": "mvt", "data": "https://tiles.example.com/{z}/{x}/{y}.pbf", "sourceLayer": "buildings" }
+{ "type": "mvt", "url": "https://tiles.example.com/{z}/{x}/{y}.pbf", "sourceLayer": "buildings" }
 ```
 
 **Raster** — tile layers (satellite, terrain):
 ```json
-{ "type": "raster", "data": "https://tiles.example.com/{z}/{x}/{y}.png" }
+{ "type": "raster", "url": "https://tiles.example.com/{z}/{x}/{y}.png" }
+```
+
+**PMTiles** — self-hosted vector tile archives:
+```json
+{ "type": "pmtiles", "url": "https://example.com/data.pmtiles", "sourceLayer": "buildings" }
 ```
 
 ### Data-Driven Styling
@@ -139,6 +159,8 @@ Point radius supports data-driven sizing too:
 ```json
 { "pointRadius": { "type": "continuous", "attr": "mag", "domain": [0, 8], "range": [2, 12] } }
 ```
+
+Available palettes: `Burg` `RedOr` `OrYel` `Peach` `PinkYl` `Mint` `BluGrn` `DarkMint` `Emrld` `BluYl` `Teal` `Purp` `Sunset` `SunsetDark` `Magenta` `TealRose` `Geyser` `Temps` `Fall` `ArmyRose` `Tropic` `Bold` `Pastel` `Antique` `Vivid` `Prism` `Safe`
 
 ### Controls
 
@@ -165,7 +187,7 @@ Auto-generated from data-driven layers:
 
 ### Widgets
 
-Stat cards overlaid on the map:
+Stat cards overlaid on the map, with optional SQL-powered data via DuckDB-WASM:
 ```json
 {
   "widgets": {
@@ -226,31 +248,62 @@ function MyComponent() {
 
 ## AI Integration
 
-jsonmaps ships a catalog and system prompt for AI code generation:
+json-maps exports everything you need to build AI-powered map generation with streaming JSONL patches.
+
+### API Route (Next.js)
+
+Create a streaming endpoint in two lines:
+
+```ts
+// app/api/generate/route.ts
+import { createMapGenerateHandler } from "json-maps/api";
+
+export const POST = createMapGenerateHandler();
+export const maxDuration = 30;
+```
+
+Requires `ai` and `@ai-sdk/anthropic` as dependencies. Customize the model and temperature:
+
+```ts
+export const POST = createMapGenerateHandler({
+  model: "claude-haiku-4-5-20251001",
+  temperature: 0.7,
+});
+```
+
+### Client Hook
+
+Use `useMapStream` to connect a text input to your streaming endpoint:
 
 ```tsx
-import { mapCatalog } from "json-maps";
-// Pass mapCatalog to your LLM as a system prompt
-// AI generates valid MapSpec JSON constrained to your catalog
+"use client";
+import { MapRenderer, useMapStream } from "json-maps";
+
+export default function Editor() {
+  const { spec, isStreaming, send, stop } = useMapStream({
+    api: "/api/generate",
+  });
+
+  return (
+    <div>
+      <button onClick={() => send("Show me Tokyo with landmarks")}>
+        Generate
+      </button>
+      <MapRenderer spec={spec} className="h-screen" />
+    </div>
+  );
+}
 ```
 
-## Tailwind CSS
+### System Prompt & Catalog
 
-**v4** — add to your CSS:
-```css
-@source "../node_modules/json-maps/dist";
-```
+For custom AI pipelines, use the prompt utilities directly:
 
-**v3** — add to `tailwind.config.js`:
-```js
-content: ["./node_modules/json-maps/dist/**/*.js"]
-```
-
-## Next.js
-
-Add to `next.config.ts`:
 ```ts
-const config = { transpilePackages: ["json-maps"] };
+import { generateSystemPrompt, buildUserPrompt } from "json-maps";
+
+const systemPrompt = generateSystemPrompt();
+const userPrompt = buildUserPrompt("Show me earthquakes", previousSpec);
 ```
 
 ## Development

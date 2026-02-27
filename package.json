@@ -1,6 +1,6 @@
 {
   "name": "json-maps",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "license": "MIT",
   "description": "Declarative map renderer — drop in a JSON spec, get a full interactive map",
@@ -11,10 +11,19 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./api": {
+      "import": "./dist/api.js",
+      "types": "./dist/api.d.ts"
+    },
+    "./styles.css": {
+      "style": "./lib/styles.css",
+      "default": "./lib/styles.css"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "lib/styles.css"
   ],
   "sideEffects": false,
   "repository": {
@@ -46,7 +55,13 @@
   "peerDependencies": {
     "maplibre-gl": ">=4",
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "ai": ">=4",
+    "@ai-sdk/anthropic": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "ai": { "optional": true },
+    "@ai-sdk/anthropic": { "optional": true }
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.99",
@@ -66,6 +81,7 @@
   },
   "devDependencies": {
     "@ai-sdk/anthropic": "^3.0.43",
+    "ai": "^6.0.86",
     "@mdx-js/loader": "^3.1.1",
     "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.1.6",
@@ -76,7 +92,6 @@
     "@types/node": "^22.15.3",
     "@types/react": "19.2.3",
     "@types/react-dom": "19.2.3",
-    "ai": "^6.0.86",
     "class-variance-authority": "^0.7.1",
     "lz-string": "^1.5.0",
     "maplibre-gl": ">=4",
