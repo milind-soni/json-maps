@@ -52,6 +52,27 @@ export function DefaultMarker({ marker, color }: MarkerComponentProps) {
   );
 }
 
+const POPUP_STYLE: React.CSSProperties = {
+  position: "relative",
+  borderRadius: 6,
+  border: "1px solid rgba(0,0,0,0.12)",
+  background: "#ffffff",
+  color: "#111827",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  overflow: "hidden",
+  maxWidth: 260,
+};
+
+const TOOLTIP_STYLE: React.CSSProperties = {
+  borderRadius: 6,
+  background: "#111827",
+  color: "#ffffff",
+  padding: "2px 8px",
+  fontSize: 12,
+  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+  whiteSpace: "nowrap",
+};
+
 export function DefaultPopup({ marker }: PopupComponentProps) {
   const popup = marker.popup;
   if (!popup) return null;
@@ -62,23 +83,23 @@ export function DefaultPopup({ marker }: PopupComponentProps) {
   const image = isRich ? popup.image : undefined;
 
   return (
-    <div className="relative rounded-md border border-border bg-popover text-popover-foreground shadow-md overflow-hidden max-w-[260px] animate-in fade-in-0 zoom-in-95">
+    <div style={POPUP_STYLE}>
       {image && (
-        <div className="h-32 overflow-hidden">
+        <div style={{ height: 128, overflow: "hidden" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={image}
             alt={title ?? ""}
-            className="w-full h-full object-cover"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         </div>
       )}
-      <div className="p-3 space-y-1">
+      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
         {title && (
-          <div className="font-semibold text-sm leading-tight">{title}</div>
+          <div style={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>{title}</div>
         )}
         {description && (
-          <div className="text-xs text-muted-foreground leading-relaxed">
+          <div style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}>
             {description}
           </div>
         )}
@@ -89,7 +110,7 @@ export function DefaultPopup({ marker }: PopupComponentProps) {
 
 export function DefaultTooltip({ text }: TooltipComponentProps) {
   return (
-    <div className="rounded-md bg-foreground px-2 py-1 text-xs text-background shadow-md whitespace-nowrap animate-in fade-in-0 zoom-in-95">
+    <div style={TOOLTIP_STYLE}>
       {text}
     </div>
   );
@@ -99,24 +120,24 @@ export function DefaultLayerTooltip({ properties, columns }: LayerTooltipCompone
   // Simple text tooltip (single "_text" column = literal string)
   if (columns.length === 1 && columns[0] === "_text") {
     return (
-      <div className="rounded-md border border-border bg-popover text-popover-foreground shadow-md px-2.5 py-1.5 max-w-[280px] text-xs font-medium">
+      <div style={{ ...POPUP_STYLE, padding: "6px 10px", fontSize: 12, fontWeight: 500, maxWidth: 280 }}>
         {String(properties._text)}
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border border-border bg-popover text-popover-foreground shadow-md px-3 py-2 max-w-[280px]">
-      <div className="space-y-0.5">
+    <div style={{ ...POPUP_STYLE, padding: "8px 12px", maxWidth: 280 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {columns.map((col) => {
           const value = properties[col];
           if (value === undefined || value === null) return null;
           return (
-            <div key={col} className="flex gap-2 text-xs leading-relaxed">
-              <span className="text-muted-foreground shrink-0">
+            <div key={col} style={{ display: "flex", gap: 8, fontSize: 12, lineHeight: 1.5 }}>
+              <span style={{ color: "#6b7280", flexShrink: 0 }}>
                 {col}
               </span>
-              <span className="font-medium truncate">{String(value)}</span>
+              <span style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{String(value)}</span>
             </div>
           );
         })}

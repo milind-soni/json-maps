@@ -1,29 +1,26 @@
 import { jsonSchema, stepCountIs, streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { generateSystemPrompt } from "./catalog";
-import { buildUserPrompt } from "./prompt";
+import { generateStorySystemPrompt } from "./story-catalog";
 
-// Re-export story API handler
-export { createStoryGenerateHandler } from "./story-api";
-export type { StoryGenerateHandlerOptions } from "./story-api";
-
-export interface MapGenerateHandlerOptions {
+export interface StoryGenerateHandlerOptions {
   model?: string;
   temperature?: number;
 }
 
 /**
- * Creates a POST handler for AI map generation.
+ * Creates a POST handler for AI story generation.
  *
  * Usage in Next.js App Router:
  * ```ts
- * import { createMapGenerateHandler } from "json-maps/api";
- * export const POST = createMapGenerateHandler();
- * export const maxDuration = 30;
+ * import { createStoryGenerateHandler } from "json-maps/api";
+ * export const POST = createStoryGenerateHandler();
+ * export const maxDuration = 60;
  * ```
  */
-export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
-  const SYSTEM_PROMPT = generateSystemPrompt();
+export function createStoryGenerateHandler(
+  options?: StoryGenerateHandlerOptions,
+) {
+  const SYSTEM_PROMPT = generateStorySystemPrompt();
   const modelId = options?.model ?? "claude-haiku-4-5-20251001";
   const temperature = options?.temperature ?? 0.7;
 
@@ -31,11 +28,10 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
     try {
       const { prompt, context } = await req.json();
 
-      const userPrompt = buildUserPrompt(
-        prompt,
-        context?.previousSpec,
-        context?.layerSchemas,
-      );
+      let userPrompt = prompt;
+      if (context?.previousStorySpec) {
+        userPrompt = `CURRENT STORY (refine it based on the request below):\n${JSON.stringify(context.previousStorySpec)}\n\nUSER REQUEST: ${prompt}`;
+      }
 
       const result = streamText({
         model: anthropic(modelId),
@@ -61,7 +57,7 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
             execute: async ({ query }: { query: string }) => {
               const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
               const res = await fetch(url, {
-                headers: { "User-Agent": "factmaps/1.0" },
+                headers: { "User-Agent": "json-maps/1.0" },
               });
               const data = await res.json();
               if (!data.length) return { error: "No results found" };
@@ -106,7 +102,7 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
                   event.error instanceof Error
                     ? event.error.message
                     : String(event.error);
-                console.error("[json-maps/api] Stream error event:", msg);
+                console.error("[json-maps/story-api] Stream error:", msg);
                 controller.enqueue(
                   encoder.encode(
                     `\n{"__meta":"error","message":${JSON.stringify(msg)}}\n`,
@@ -126,17 +122,19 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
             }
 
             if (!hasOutput) {
-              console.error("[json-maps/api] Stream produced no output");
+              console.error(
+                "[json-maps/story-api] Stream produced no output",
+              );
               controller.enqueue(
                 encoder.encode(
-                  `\n{"__meta":"error","message":"Generation failed — no output produced. Check API key."}\n`,
+                  `\n{"__meta":"error","message":"Story generation failed — no output produced. Check API key."}\n`,
                 ),
               );
             }
           } catch (err) {
             const msg =
               err instanceof Error ? err.message : String(err);
-            console.error("[json-maps/api] Stream error:", msg);
+            console.error("[json-maps/story-api] Stream error:", msg);
             controller.enqueue(
               encoder.encode(
                 `\n{"__meta":"error","message":${JSON.stringify(msg)}}\n`,
@@ -152,7 +150,7 @@ export function createMapGenerateHandler(options?: MapGenerateHandlerOptions) {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[json-maps/api] Route error:", msg);
+      console.error("[json-maps/story-api] Route error:", msg);
       return Response.json({ message: msg }, { status: 500 });
     }
   };

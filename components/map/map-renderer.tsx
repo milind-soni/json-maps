@@ -59,6 +59,9 @@ export function MapRenderer({
   onLayerClick,
   onLayerHover,
   onError,
+  onMapReady,
+  onRouteLoad,
+  onRouteError,
 }: MapRendererProps) {
   const Marker = components?.Marker ?? DefaultMarker;
   const Popup = components?.Popup ?? DefaultPopup;
@@ -71,8 +74,8 @@ export function MapRenderer({
   const [, setPortalVersion] = useState(0);
 
   // Callback refs — always current, avoids re-registering listeners
-  const callbacksRef = useRef({ onViewportChange, onMapClick, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick, onLayerHover, onError });
-  callbacksRef.current = { onViewportChange, onMapClick, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick, onLayerHover, onError };
+  const callbacksRef = useRef({ onViewportChange, onMapClick, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick, onLayerHover, onError, onRouteLoad, onRouteError });
+  callbacksRef.current = { onViewportChange, onMapClick, onMarkerClick, onMarkerDragStart, onMarkerDrag, onMarkerDragEnd, onLayerClick, onLayerHover, onError, onRouteLoad, onRouteError };
 
   // Map load state for useMap hook
   const [isLoaded, setIsLoaded] = useState(false);
@@ -358,6 +361,7 @@ export function MapRenderer({
     // Sync layers after initial style load (addSource/addLayer need style ready)
     map.on("load", () => {
       setIsLoaded(true);
+      onMapReady?.(map);
       if (spec.bounds) {
         map.fitBounds(spec.bounds as [number, number, number, number], {
           padding: 40,

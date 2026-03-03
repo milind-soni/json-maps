@@ -19,6 +19,8 @@
     "lib/**/*.ts",
     "components/map/**/*.ts",
     "components/map/**/*.tsx",
+    "components/story/**/*.ts",
+    "components/story/**/*.tsx",
     "hooks/**/*.ts"
   ]
 }

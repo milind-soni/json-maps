@@ -1,4 +1,4 @@
-export { MapRenderer, useMap, DefaultMarker, DefaultPopup, DefaultTooltip, DefaultLayerTooltip } from "../components/map";
+export { MapRenderer, useMap, DefaultMarker, DefaultPopup, DefaultTooltip, DefaultLayerTooltip, getLayerId } from "../components/map";
 
 export type {
   MapSpec,
@@ -50,3 +50,19 @@ export type { SystemPromptOptions } from "./catalog";
 export { buildUserPrompt } from "./prompt";
 export { useMapStream } from "./use-map-stream";
 export type { UseMapStreamOptions, UseMapStreamReturn, TokenUsage, ToolCall } from "./use-map-stream";
+
+// Story rendering
+export { StoryRenderer } from "../components/story";
+export type {
+  StorySpec,
+  StoryChapter,
+  StoryMedia,
+  StoryOverlay,
+  StoryTheme,
+  StoryLayout,
+  StoryEasing,
+  StoryRendererProps,
+} from "./story-spec";
+export { validateStorySpec, autoFixStorySpec, formatStorySpecIssues } from "./story-spec-schema";
+export { useStoryStream } from "./use-story-stream";
+export type { UseStoryStreamOptions, UseStoryStreamReturn, StoryToolCall } from "./use-story-stream";

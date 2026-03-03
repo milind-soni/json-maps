@@ -62,16 +62,16 @@ export function Header() {
             Docs
           </Link>
           <Link
-            href="/storytelling"
+            href="/story-playground"
             className={cn(
               "text-sm transition-colors",
-              isActive("/storytelling")
+              isActive("/story-playground")
                 ? "text-purple-500 font-medium"
                 : "text-muted-foreground hover:text-purple-500",
             )}
           >
             <span className="sm:hidden">Stories</span>
-            <span className="hidden sm:inline">Storytelling</span>
+            <span className="hidden sm:inline">Stories</span>
           </Link>
           <a
             href="https://github.com/milind-soni/json-maps"

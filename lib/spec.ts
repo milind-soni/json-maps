@@ -432,6 +432,27 @@ export interface MapRendererProps {
   onLayerHover?: (layerId: string | null, coordinates: [number, number] | null, properties?: Record<string, unknown>) => void;
   /** Fires when a layer fails to load (bad URL, CORS, parse error, etc.) */
   onError?: (error: MapError) => void;
+  /**
+   * Fires once after the MapLibre map instance is created and the style is fully loaded.
+   * Use this as an escape hatch to access the raw MapLibre `Map` instance without needing
+   * a child component and `useMap()`.
+   *
+   * @example
+   * ```tsx
+   * <MapRenderer spec={spec} onMapReady={(map) => map.addControl(myControl)} />
+   * ```
+   */
+  onMapReady?: (map: import("maplibre-gl").Map) => void;
+  /**
+   * Fires when a route layer finishes loading its coordinates (after OSRM/routing fetch).
+   * Receives the layer key and the resolved coordinate array.
+   */
+  onRouteLoad?: (layerId: string, coordinates: [number, number][]) => void;
+  /**
+   * Fires when a route layer fails to fetch routing data.
+   * Note: the layer still renders a fallback straight line.
+   */
+  onRouteError?: (layerId: string, error: Error) => void;
 }
 
 export const BASEMAP_STYLES: Record<string, string> = {

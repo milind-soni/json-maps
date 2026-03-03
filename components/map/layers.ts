@@ -40,6 +40,11 @@ export interface LayerDeps {
   mapRef: React.RefObject<maplibregl.Map | null>;
 }
 
+/** Returns the internal MapLibre layer/source ID prefix for a json-maps layer key. */
+export function getLayerId(key: string): string {
+  return `jm-${key}`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  GeoJSON layer                                                      */
 /* ------------------------------------------------------------------ */
@@ -371,13 +376,16 @@ export function addRouteLayer(
         .then((coords: [number, number][]) => {
           deps.pendingRouteFetchRef.current.delete(id);
           if (deps.mapRef.current !== map) return;
+          deps.callbacksRef.current.onRouteLoad?.(id, coords);
           renderRouteOnMap(map, id, layer, coords, deps);
         })
         .catch((err: unknown) => {
           deps.pendingRouteFetchRef.current.delete(id);
-          const msg = `Routing failed for "${id}", falling back to straight line: ${err instanceof Error ? err.message : err}`;
+          const routeErr = err instanceof Error ? err : new Error(String(err));
+          const msg = `Routing failed for "${id}", falling back to straight line: ${routeErr.message}`;
           console.warn(`[json-maps] ${msg}`);
           deps.callbacksRef.current.onError?.({ layerId: id, message: msg });
+          deps.callbacksRef.current.onRouteError?.(id, routeErr);
           if (deps.mapRef.current !== map) return;
           // Fallback: straight line between from/to
           const fallback = [layer.from!, ...(layer.waypoints ?? []), layer.to!];
