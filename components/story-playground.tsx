@@ -119,7 +119,7 @@ export function StoryPlayground() {
                         className={`w-1.5 h-1.5 rounded-full ${tc.result ? "bg-green-500" : "bg-yellow-500 animate-pulse"}`}
                       />
                       {tc.toolName}({JSON.stringify(tc.args).slice(0, 60)})
-                      {tc.result && " done"}
+                      {tc.result != null && " done"}
                     </div>
                   ))}
                 </div>
