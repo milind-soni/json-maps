@@ -66,15 +66,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          defer
-          data-website-id="dfid_u3kCw1rjFq9hO5X5ttmWG"
-          data-domain="jsonmaps.dev"
-          data-allow-localhost="true"
-          src="https://datafa.st/js/script.js"
-        />
-      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider>
           {children}
