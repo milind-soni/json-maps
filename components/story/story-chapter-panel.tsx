@@ -1,5 +1,6 @@
 "use client";
 
+import Markdown from "markdown-to-jsx";
 import type { StoryChapter, StoryLayout, StoryTheme } from "@/lib/story-spec";
 
 interface StoryChapterPanelProps {
@@ -8,7 +9,52 @@ interface StoryChapterPanelProps {
   layout: StoryLayout;
   theme: StoryTheme;
   progress: number;
+  isMobile?: boolean;
 }
+
+const MARKDOWN_OVERRIDES = {
+  forceBlock: true,
+  disableParsingRawHTML: true,
+  overrides: {
+    // Downgrade headings — chapter already has an <h2>
+    h1: { component: "strong" as const, props: { style: { display: "block", fontSize: "1.15em", margin: "0.5em 0" } } },
+    h2: { component: "strong" as const, props: { style: { display: "block", fontSize: "1.1em", margin: "0.5em 0" } } },
+    h3: { component: "strong" as const, props: { style: { display: "block", fontSize: "1.05em", margin: "0.5em 0" } } },
+    h4: { component: "strong" as const },
+    h5: { component: "strong" as const },
+    h6: { component: "strong" as const },
+    // Disable code blocks, tables, images (media handled separately)
+    pre: { component: "span" as const },
+    table: { component: "div" as const },
+    img: { component: "span" as const },
+    // Style inline code
+    code: { component: "code" as const, props: { style: { fontFamily: "monospace", fontSize: "0.9em" } } },
+    // Links open in new tab
+    a: {
+      component: "a" as const,
+      props: {
+        target: "_blank",
+        rel: "noopener noreferrer",
+        style: { color: "inherit", textDecoration: "underline", textUnderlineOffset: "2px" },
+      },
+    },
+    // List styling for narrow panels
+    ul: { props: { style: { paddingLeft: "1.2em", margin: "0.5em 0" } } },
+    ol: { props: { style: { paddingLeft: "1.2em", margin: "0.5em 0" } } },
+    li: { props: { style: { marginBottom: "0.25em" } } },
+    p: { props: { style: { margin: "0 0 0.5em 0" } } },
+    blockquote: {
+      props: {
+        style: {
+          borderLeft: "3px solid currentColor",
+          paddingLeft: "12px",
+          margin: "0.5em 0",
+          opacity: 0.8,
+        },
+      },
+    },
+  },
+};
 
 export function StoryChapterPanel({
   chapter,
@@ -16,9 +62,12 @@ export function StoryChapterPanel({
   layout,
   theme,
   progress,
+  isMobile = false,
 }: StoryChapterPanelProps) {
-  const isOverlay = layout === "overlay-center" || layout === "overlay-left";
-  const isRight = layout === "sidebar-right";
+  // Force overlay-center on mobile
+  const effectiveLayout = isMobile ? "overlay-center" : layout;
+  const isOverlay = effectiveLayout === "overlay-center" || effectiveLayout === "overlay-left";
+  const isRight = effectiveLayout === "sidebar-right";
 
   // Fade in when chapter becomes active
   const opacity = isActive ? Math.min(progress * 4, 1) : progress > 0.9 ? 1 - (progress - 0.9) * 10 : 0;
@@ -32,7 +81,7 @@ export function StoryChapterPanel({
         zIndex: 2,
         display: "flex",
         justifyContent: isOverlay
-          ? layout === "overlay-left"
+          ? effectiveLayout === "overlay-left"
             ? "flex-start"
             : "center"
           : isRight
@@ -45,8 +94,12 @@ export function StoryChapterPanel({
       <div
         data-active={isActive}
         style={{
-          width: isOverlay ? "min(420px, 90vw)" : "min(400px, 40vw)",
-          padding: isOverlay ? "24px" : "32px 40px",
+          width: isOverlay
+            ? isMobile ? "min(360px, 90vw)" : "min(420px, 90vw)"
+            : "min(400px, 40vw)",
+          padding: isOverlay
+            ? isMobile ? "20px" : "24px"
+            : isMobile ? "24px" : "32px 40px",
           backgroundColor: isDark
             ? "rgba(10, 10, 10, 0.92)"
             : "rgba(255, 255, 255, 0.95)",
@@ -60,12 +113,14 @@ export function StoryChapterPanel({
           transform: `translateY(${isActive ? 0 : 20}px)`,
           transition: "transform 0.4s ease-out",
           pointerEvents: isActive ? "auto" : "none",
-          margin: isOverlay ? "0" : isRight ? "0 48px 0 0" : "0 0 0 48px",
+          margin: isMobile
+            ? "0 auto"
+            : isOverlay ? "0" : isRight ? "0 48px 0 0" : "0 0 0 48px",
         }}
       >
         <h2
           style={{
-            fontSize: "1.5rem",
+            fontSize: isMobile ? "1.25rem" : "1.5rem",
             fontWeight: 700,
             lineHeight: 1.2,
             margin: "0 0 12px 0",
@@ -73,16 +128,18 @@ export function StoryChapterPanel({
         >
           {chapter.heading}
         </h2>
-        <p
+        <div
           style={{
-            fontSize: "1rem",
+            fontSize: isMobile ? "0.9rem" : "1rem",
             lineHeight: 1.6,
             margin: 0,
             opacity: 0.85,
           }}
         >
-          {chapter.content}
-        </p>
+          <Markdown options={MARKDOWN_OVERRIDES}>
+            {chapter.content}
+          </Markdown>
+        </div>
         {chapter.media && (
           <div style={{ marginTop: "16px" }}>
             {chapter.media.type === "image" ? (
