@@ -381,7 +381,7 @@ export function StoryRenderer({ story, className, onChapterChange }: StoryRender
 
         {/* Chapter spacers + panels (Scrollama-driven) */}
         <Scrollama
-          offset={0.7}
+          offset={0.35}
           threshold={1}
           onStepEnter={handleStepEnter}
           onStepProgress={handleStepProgress}

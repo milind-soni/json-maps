@@ -16,6 +16,7 @@
     }
   },
   "include": [
+    "react-scrollama.d.ts",
     "lib/**/*.ts",
     "components/map/**/*.ts",
     "components/map/**/*.tsx",
