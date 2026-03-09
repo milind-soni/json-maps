@@ -190,8 +190,8 @@ export function StoryRenderer({ story, className, onChapterChange }: StoryRender
       const nextChapter = chapters[i + 1];
       let view: CameraView;
 
-      if (nextChapter && progress > 0.3) {
-        const transitionT = clamp((progress - 0.3) / 0.7, 0, 1);
+      if (nextChapter && progress > 0.65) {
+        const transitionT = clamp((progress - 0.65) / 0.35, 0, 1);
         const easingFn = EASINGS[nextChapter.easing ?? "ease-in-out"] ?? easeInOut;
         const easedT = easingFn(transitionT);
 
@@ -381,7 +381,7 @@ export function StoryRenderer({ story, className, onChapterChange }: StoryRender
 
         {/* Chapter spacers + panels (Scrollama-driven) */}
         <Scrollama
-          offset={0.35}
+          offset={0.5}
           threshold={1}
           onStepEnter={handleStepEnter}
           onStepProgress={handleStepProgress}
